@@ -63,21 +63,29 @@ stream_batches <- function(stream, samples, batch_rows, fun) {
     "SELECT sample, taxon, quant FROM read_parquet(", DBI::dbQuoteString(con, stream$sorted), ")"))
   on.exit(DBI::dbClearResult(res), add = TRUE)
 
+  emit <- function(v, from, to) {
+    i <- from:to
+    fun(data.frame(sample = v$sample[i], taxon = v$taxon[i], quant = v$quant[i]))
+  }
+
   carry <- NULL
   repeat {
     rows <- DBI::dbFetch(res, n = batch_rows)
     done <- DBI::dbHasCompleted(res)
-    rows <- rbind(carry, rows)
-    if (nrow(rows) == 0) break
-    if (done && nrow(rows) <= batch_rows) {
-      fun(rows)
+    v <- if (is.null(carry)) as.list(rows) else
+      list(sample = c(carry$sample, rows$sample), taxon = c(carry$taxon, rows$taxon),
+           quant = c(carry$quant, rows$quant))
+    n <- length(v$taxon)
+    if (n == 0) break
+    if (done && n <= batch_rows) {
+      emit(v, 1L, n)
       break
     }
-    last <- rows$taxon == rows$taxon[nrow(rows)]
-    if (!all(last)) fun(rows[!last, , drop = FALSE])
-    carry <- rows[last, , drop = FALSE]
+    first_of_last <- sum(v$taxon < v$taxon[n]) + 1L
+    if (first_of_last > 1L) emit(v, 1L, first_of_last - 1L)
+    carry <- lapply(v, function(col) col[first_of_last:n])
     if (done) {
-      fun(carry)
+      emit(carry, 1L, length(carry$taxon))
       break
     }
   }
