@@ -181,6 +181,11 @@ The peak is the `dist` (100 MB here), one batch, DuckDB's `memory_limit` for the
 Measured on 20,000 samples, 19.4M table rows and 60.5 billion pair operations: 25 s with 12 threads (148 s with one), peak 2.4 GB, of which the `dist` is 1.6 GB.
 A dense taxa × samples matrix for the same table (500,000 taxa) would be about 80 GB.
 
+Lazy steps before `el_vegdist()` run in the `duckplyr` connection of the user's session, with DuckDB's defaults (all cores, 80% of RAM).
+On the 5,000-sample table, `el_decostand()` followed by `el_vegdist(method = "euclidean")` took 11–12 s and peaked at 2.4 GB for `total` and `rclr` and 3.9 GB for `log` (a table-wide window).
+After `duckplyr::db_exec("SET memory_limit = '500MB'")` and `duckplyr::db_exec("SET threads = 4")` in the session, the same pipelines took 14–15 s and peaked at 1.1 GB.
+The package does not change these settings; the documentation should tell users on small machines to set them.
+
 Memory grows with the square of the number of samples: 1.6 GB for 20,000 samples and 10 GB for 50,000.
 
 ## Function names
