@@ -11,6 +11,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Config/testthat/edition: 3
+VignetteBuilder: knitr
 Imports:
     DBI,
     Matrix,
@@ -23,7 +24,9 @@ Imports:
     parallel,
     utils
 Suggests:
+    knitr,
     pkgload,
+    rmarkdown,
     testthat (>= 3.0.0),
     vegan,
     withr

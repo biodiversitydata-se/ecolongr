@@ -72,6 +72,8 @@ vegan::scores(pca, display = "sites", choices = 1:2)
 `ecolongr` does not attach `duckplyr`.
 Attach it yourself, as above, to use its verbs on the table.
 
+A longer walk-through, from the published LMO time series to seasonal ordinations, is in the vignette `vignette("seasonal-ordination", package = "ecolongr")`.
+
 ### Filter before `clr`
 
 `clr` needs a prevalence filter on amplicon data (see below).

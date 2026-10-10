@@ -1,0 +1,224 @@
+---
+title: "A seasonal time series of ASVs, from the published table to an ordination"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{A seasonal time series of ASVs, from the published table to an ordination}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 6, fig.height = 5, dpi = 96)
+options(ecolongr.threads = 2)
+```
+
+This vignette follows one dataset from the file you download to an ordination.
+The data is the 16S time series from the Linnaeus Microbial Observatory (LMO) in the Baltic Sea, 2011–2023, published through the [Swedish ASV portal](https://asv-portal.biodiversitydata.se/) and GBIF.
+It was sampled about every two weeks, so the community should go round a seasonal cycle each year.
+That is what we look for in the ordinations.
+
+```{r libraries, message = FALSE}
+library(duckplyr)
+library(ecolongr)
+```
+
+## The data
+
+The dataset is [`lmo_2011-2023_16s`](https://www.gbif.se/ipt/resource?r=lmo_2011-2023_16s) on the GBIF IPT of the Swedish node.
+Its Darwin Core archive (109 MB zipped, 1.1 GB unpacked) holds 405,592 occurrences: one row per ASV and sample, with the read count in `organismQuantity`.
+It has two size fractions of the water, stored as the measurement `filter_fraction` in `extendedmeasurementorfact.txt`: `3` (particle associated, trapped on a 3 µm filter) and `3-0.2` (free living, trapped on a 0.2 µm filter after the 3 µm one).
+
+The archive has the layout of GBIF's standard Darwin Core archives, not that of the ZIP files the `asvoccur` package reads, so we read it directly.
+`duckplyr` reads the tab-separated files without loading them into R, and the filtering stays lazy:
+
+```{r download, eval = FALSE}
+download.file("https://www.gbif.se/ipt/archive.do?r=lmo_2011-2023_16s", "lmo.zip", mode = "wb")
+unzip("lmo.zip", exdir = "lmo")
+
+tsv <- list(delim = "\t", quote = "", header = TRUE)
+occurrence <- read_csv_duckdb("lmo/occurrence.txt", options = tsv, prudence = "stingy")
+
+# all_varchar: the first rows of the measurements are numbers (temperature, salinity),
+# which would make DuckDB read the whole column as numeric.
+emof <- read_csv_duckdb("lmo/extendedmeasurementorfact.txt",
+                        options = c(tsv, list(all_varchar = TRUE)), prudence = "stingy")
+
+free_living <- emof |>
+  filter(measurementType == "filter_fraction", measurementValue == "3-0.2") |>
+  select(occurrenceID)
+
+counts <- occurrence |>
+  semi_join(free_living, by = "occurrenceID") |>
+  transmute(sample = eventID, taxon = taxonID, quant = organismQuantity)
+
+metadata <- occurrence |>
+  semi_join(free_living, by = "occurrenceID") |>
+  distinct(sample = eventID, date = eventDate, depth = minimumDepthInMeters) |>
+  as.data.frame()
+```
+
+That is 162,171 rows, 347 samples and 24,286 ASVs.
+`prudence = "stingy"` makes `duckplyr` stop with an error if it would otherwise copy a whole table into R.
+
+To keep the vignette fast, the package contains a smaller version of the same table: the free-living fraction, with only the ASVs present in at least 5% of the samples (`data-raw/make_lmo_extdata.R` makes it from the archive).
+The rest of the vignette uses it.
+
+```{r bundled}
+counts <- read_csv_duckdb(
+  system.file("extdata", "lmo_free_living.tsv.gz", package = "ecolongr"),
+  options = list(delim = "\t", header = TRUE), prudence = "stingy"
+)
+metadata <- read.delim(system.file("extdata", "lmo_free_living_samples.tsv", package = "ecolongr"))
+metadata$date <- as.Date(metadata$date)
+metadata$day_of_year <- as.integer(format(metadata$date, "%j"))
+metadata$month <- factor(format(metadata$date, "%m"))
+
+counts |> summarise(rows = n(), samples = n_distinct(sample), taxa = n_distinct(taxon)) |> as.data.frame()
+```
+
+## Filtering
+
+The filters are `duckplyr` verbs, so the table is still not in R.
+The depth of a sample is its number of reads in the table.
+
+```{r depth}
+depth <- counts |> summarise(reads = sum(quant, na.rm = TRUE), .by = sample)
+summary(as.data.frame(depth)$reads)
+```
+
+We drop the samples with fewer than 5,000 reads, and later the ASVs that occur in fewer than 20% of the samples.
+`duckplyr` does not translate `filter(sample %in% vector)` for a vector of this length, so we filter with a join, as in the README.
+`el_vegdist()` and `el_rda()` can only see the samples that have rows, so we pass the sample table as `samples`: it sets the order of the results to the order of the metadata, which `adonis2()` and `envfit()` rely on.
+
+```{r deep}
+deep <- depth |> filter(reads >= 5000) |> select(sample)
+counts <- counts |> semi_join(deep, by = "sample")
+
+metadata <- metadata[metadata$sample %in% as.data.frame(deep)$sample, ]
+nrow(metadata)
+```
+
+## Hellinger distances
+
+Hellinger standardisation followed by Euclidean distance is a common choice for amplicon counts.
+`el_decostand()` does the standardisation lazily, and `el_vegdist()` runs the query:
+
+```{r hellinger}
+d_hellinger <- counts |>
+  el_decostand("hellinger") |>
+  el_vegdist("euclidean", samples = metadata$sample)
+class(d_hellinger)
+attr(d_hellinger, "Size")
+```
+
+The result is a `dist`, so `vegan` takes over:
+
+```{r adonis}
+set.seed(1)
+vegan::adonis2(d_hellinger ~ month, data = metadata, permutations = 199)
+```
+
+## Principal components
+
+`el_rda()` computes the first axes of a PCA without making the dense table.
+We colour the samples by day of year, with a palette that returns to its start, so that a seasonal cycle shows as a ring with the colours in order.
+
+```{r plot-helper}
+season_colours <- function(day) hcl(h = 360 * day / 366, c = 90, l = 60)
+
+plot_season <- function(pca, main) {
+  sites <- vegan::scores(pca, display = "sites", choices = 1:2)
+  plot(sites, col = season_colours(metadata$day_of_year), pch = 19, asp = 1, main = main)
+}
+```
+
+```{r pca-hellinger}
+pca_hellinger <- counts |>
+  el_decostand("hellinger") |>
+  el_rda(k = 5, samples = metadata$sample)
+
+plot_season(pca_hellinger, "Hellinger")
+summary(pca_hellinger)$cont$importance[2:3, 1:3]
+```
+
+The colours follow each other around a ring, one lap per year, so the seasonal cycle is the main structure in the first two axes.
+
+## The centred log-ratio
+
+The Aitchison distance is the Euclidean distance on the centred log-ratio (clr) of the counts.
+Zeros need a pseudocount.
+`pseudocount = "inverse_depth"` adds `1 / (the sample's reads)` to the counts of each sample, so that a shallow sample, with its higher detection limit, gets a larger pseudocount.
+Give the raw counts: the pseudocount is in count units.
+
+`clr` makes every cell non-zero, so it is not a method of `el_decostand()`.
+`el_vegdist(method = "aitchison")` and `el_rda(transform = "clr")` take the counts and never build the dense table.
+
+On amplicon data, the many rare ASVs dominate a clr unless they are removed.
+We keep the ASVs present in at least 20% of the samples:
+
+```{r clr-filter}
+n_samples <- nrow(metadata)
+
+common <- counts |>
+  summarise(prevalence = n_distinct(sample), .by = taxon) |>
+  filter(prevalence >= 0.2 * n_samples) |>
+  select(taxon)
+
+common |> summarise(taxa = n()) |> as.data.frame()
+
+counts_common <- counts |> semi_join(common, by = "taxon")
+```
+
+```{r clr}
+d_aitchison <- counts_common |>
+  el_vegdist("aitchison", pseudocount = "inverse_depth", samples = metadata$sample)
+
+pca_clr <- counts_common |>
+  el_rda(k = 5, transform = "clr", pseudocount = "inverse_depth", samples = metadata$sample)
+
+plot_season(pca_clr, "clr, ASVs in at least 20% of the samples")
+summary(pca_clr)$cont$importance[2:3, 1:3]
+```
+
+The cycle is there as well, as a filled disc rather than a thin ring.
+
+For comparison, the same PCA with all the ASVs of the bundled table (those in at least 5% of the samples):
+
+```{r clr-all}
+pca_clr_all <- counts |>
+  el_rda(k = 5, transform = "clr", pseudocount = "inverse_depth", samples = metadata$sample)
+
+plot_season(pca_clr_all, "clr, ASVs in at least 5% of the samples")
+```
+
+With the ASVs that occur in 5–20% of the samples included, the points spread out more and the order of the colours is less clear.
+
+## How much do the axes leave out?
+
+`el_rda()` keeps the first `k` axes.
+The total variance of the table is still known, so the share that the other axes hold can be computed:
+
+```{r unexplained}
+unexplained <- function(pca) 1 - sum(vegan::eigenvals(pca)) / pca$tot.chi
+round(c(hellinger = unexplained(pca_hellinger), clr = unexplained(pca_clr)), 2)
+```
+
+## Seasonal structure in the distances
+
+A distance matrix is what `vegan::adonis2()` needs.
+The month explains this share of the variation in each distance:
+
+```{r adonis-both}
+set.seed(2)
+r2 <- sapply(
+  list(hellinger = d_hellinger, aitchison = d_aitchison),
+  function(d) vegan::adonis2(d ~ month, data = metadata, permutations = 99)$R2[1]
+)
+round(r2, 2)
+```
+
+## Memory
+
+Nothing above held the table as a dense matrix.
+For the full table the distance matrix is the largest object (one number per pair of samples), and the rest of the work is done in batches.
+See the README for settings and measurements on much larger tables.
