@@ -12,7 +12,11 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Config/testthat/edition: 3
 Imports:
-    duckplyr
+    dplyr,
+    duckplyr,
+    stats,
+    utils
 Suggests:
     testthat (>= 3.0.0),
     vegan
+Config/roxygen2/version: 8.1.1
