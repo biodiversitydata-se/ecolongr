@@ -11,8 +11,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // accumulate_pairs
-void accumulate_pairs(NumericVector acc, IntegerVector sample, IntegerVector taxon, NumericVector quant, int n, bool product, int threads);
-RcppExport SEXP _ecolongr_accumulate_pairs(SEXP accSEXP, SEXP sampleSEXP, SEXP taxonSEXP, SEXP quantSEXP, SEXP nSEXP, SEXP productSEXP, SEXP threadsSEXP) {
+void accumulate_pairs(NumericVector acc, IntegerVector sample, IntegerVector taxon, NumericVector quant, int n, bool product, int threads, bool canberra, NumericVector count);
+RcppExport SEXP _ecolongr_accumulate_pairs(SEXP accSEXP, SEXP sampleSEXP, SEXP taxonSEXP, SEXP quantSEXP, SEXP nSEXP, SEXP productSEXP, SEXP threadsSEXP, SEXP canberraSEXP, SEXP countSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type acc(accSEXP);
@@ -22,13 +22,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
     Rcpp::traits::input_parameter< bool >::type product(productSEXP);
     Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
-    accumulate_pairs(acc, sample, taxon, quant, n, product, threads);
+    Rcpp::traits::input_parameter< bool >::type canberra(canberraSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type count(countSEXP);
+    accumulate_pairs(acc, sample, taxon, quant, n, product, threads, canberra, count);
     return R_NilValue;
 END_RCPP
 }
 // finalize_dist
-void finalize_dist(NumericVector acc, NumericVector total, NumericVector square, int n, int method, int threads, double ntaxa);
-RcppExport SEXP _ecolongr_finalize_dist(SEXP accSEXP, SEXP totalSEXP, SEXP squareSEXP, SEXP nSEXP, SEXP methodSEXP, SEXP threadsSEXP, SEXP ntaxaSEXP) {
+void finalize_dist(NumericVector acc, NumericVector total, NumericVector square, int n, int method, int threads, double ntaxa, NumericVector nnz, NumericVector shared);
+RcppExport SEXP _ecolongr_finalize_dist(SEXP accSEXP, SEXP totalSEXP, SEXP squareSEXP, SEXP nSEXP, SEXP methodSEXP, SEXP threadsSEXP, SEXP ntaxaSEXP, SEXP nnzSEXP, SEXP sharedSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type acc(accSEXP);
@@ -38,14 +40,16 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type method(methodSEXP);
     Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
     Rcpp::traits::input_parameter< double >::type ntaxa(ntaxaSEXP);
-    finalize_dist(acc, total, square, n, method, threads, ntaxa);
+    Rcpp::traits::input_parameter< NumericVector >::type nnz(nnzSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type shared(sharedSEXP);
+    finalize_dist(acc, total, square, n, method, threads, ntaxa, nnz, shared);
     return R_NilValue;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_ecolongr_accumulate_pairs", (DL_FUNC) &_ecolongr_accumulate_pairs, 7},
-    {"_ecolongr_finalize_dist", (DL_FUNC) &_ecolongr_finalize_dist, 7},
+    {"_ecolongr_accumulate_pairs", (DL_FUNC) &_ecolongr_accumulate_pairs, 9},
+    {"_ecolongr_finalize_dist", (DL_FUNC) &_ecolongr_finalize_dist, 9},
     {NULL, NULL, 0}
 };
 

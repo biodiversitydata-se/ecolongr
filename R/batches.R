@@ -45,7 +45,8 @@ stream_summary <- function(stream) {
     totals = DBI::dbGetQuery(stream$con, sprintf("
       SELECT CAST(sample AS VARCHAR) AS sample,
              coalesce(sum(%1$s) FILTER (WHERE quant <> 0), 0) AS total,
-             coalesce(sum(%1$s * %1$s) FILTER (WHERE quant <> 0), 0) AS square
+             coalesce(sum(%1$s * %1$s) FILTER (WHERE quant <> 0), 0) AS square,
+             CAST(count(*) FILTER (WHERE quant <> 0) AS DOUBLE) AS cells
       FROM v GROUP BY sample", stream$value))
   )
 }

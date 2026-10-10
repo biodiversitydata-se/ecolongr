@@ -87,7 +87,8 @@ test_that("integer counts above the 32-bit limit give vegan's result for manhatt
 })
 
 naive_canberra <- function(sample, taxon, quant, n) {
-  acc <- count <- numeric(n * (n - 1) / 2)
+  acc <- numeric(n * (n - 1) / 2)
+  count <- numeric(n * (n - 1) / 2)
   for (t in unique(taxon)) {
     rows <- which(taxon == t)
     for (a in rows) for (b in rows) {
@@ -106,7 +107,8 @@ test_that("accumulate_pairs in canberra mode adds |a - b| / (a + b) and counts t
   expected <- naive_canberra(d$sample, d$taxon, d$quant, 25L)
 
   for (threads in c(1L, 3L)) {
-    acc <- count <- numeric(25 * 24 / 2)
+    acc <- numeric(25 * 24 / 2)
+    count <- numeric(25 * 24 / 2)
     accumulate_pairs(acc, d$sample, d$taxon, d$quant, 25L, canberra = TRUE, count = count, threads = threads)
     expect_equal(acc, expected$acc)
     expect_equal(count, expected$count)

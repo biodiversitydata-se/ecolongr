@@ -17,12 +17,15 @@ using namespace Rcpp;
 // order whatever the number of threads.
 // [[Rcpp::export]]
 void accumulate_pairs(NumericVector acc, IntegerVector sample, IntegerVector taxon,
-                      NumericVector quant, int n, bool product = false, int threads = 1) {
+                      NumericVector quant, int n, bool product = false, int threads = 1,
+                      bool canberra = false, NumericVector count = NumericVector(0)) {
   const R_xlen_t N = sample.size();
   if (acc.size() != (R_xlen_t) n * (n - 1) / 2) stop("`acc` must have n * (n - 1) / 2 elements");
   for (R_xlen_t r = 0; r < N; ++r) {
     if (sample[r] < 0 || sample[r] >= n) stop("`sample` ids must be in [0, n)");
   }
+  const bool counting = canberra && count.size() > 0;
+  if (counting && count.size() != acc.size()) stop("`count` must have the length of `acc`");
   if (N == 0 || n < 2) return;
   if (threads < 1) threads = 1;
 
@@ -69,6 +72,7 @@ void accumulate_pairs(NumericVector acc, IntegerVector sample, IntegerVector tax
   for (R_xlen_t g = 0; g < G; ++g) maxK = std::max(maxK, start[g + 1] - start[g]);
 
   double* out = acc.begin();
+  double* counts = counting ? count.begin() : nullptr;
   #pragma omp parallel num_threads(threads)
   {
     std::vector<double> buffer(maxK);
@@ -82,37 +86,55 @@ void accumulate_pairs(NumericVector acc, IntegerVector sample, IntegerVector tax
         R_xlen_t a = std::lower_bound(s.begin() + lo, s.begin() + hi, idLo) - s.begin();
         for (; a < hi && s[a] < idHi; ++a) {
           const R_xlen_t i = s[a];
-          double* __restrict row = out + i * (2 * (R_xlen_t) n - i - 1) / 2 - i - 1;
+          const R_xlen_t offset = i * (2 * (R_xlen_t) n - i - 1) / 2 - i - 1;
+          double* __restrict row = out + offset;
           const double qa = q[a];
           const int* __restrict sb = s.data() + a + 1;
           const double* __restrict qb = q.data() + a + 1;
           const R_xlen_t len = hi - a - 1;
-          if (product) {
+          if (canberra) {
+            for (R_xlen_t j = 0; j < len; ++j) tmp[j] = std::fabs(qa - qb[j]) / (qa + qb[j]);
+          } else if (product) {
             for (R_xlen_t j = 0; j < len; ++j) tmp[j] = qa * qb[j];
           } else {
             for (R_xlen_t j = 0; j < len; ++j) tmp[j] = qa < qb[j] ? qa : qb[j];
           }
           for (R_xlen_t j = 0; j < len; ++j) row[sb[j]] += tmp[j];
+          if (counting) {
+            double* __restrict crow = counts + offset;
+            for (R_xlen_t j = 0; j < len; ++j) crow[sb[j]] += 1.0;
+          }
         }
       }
     }
   }
 }
 
-// method: 0 = bray, 1 = jaccard, 2 = euclidean, 3 = aitchison. acc holds the shared minima
-// (or products for euclidean and aitchison) and is replaced by the distances.
+// method: 0 = bray, 1 = jaccard, 2 = euclidean, 3 = aitchison, 4 = manhattan, 5 = canberra.
+// acc holds the shared minima (products for euclidean and aitchison, the sum of
+// |a - b| / (a + b) over shared taxa for canberra) and is replaced by the distances.
+// For canberra, nnz holds the number of non-zero cells per sample and shared the number of
+// taxa each pair has in common.
 // For aitchison, total holds the row sums of the non-constant part of the clr and ntaxa
 // the number of taxa: the clr is that part minus its row mean.
 // [[Rcpp::export]]
 void finalize_dist(NumericVector acc, NumericVector total, NumericVector square,
-                   int n, int method, int threads = 1, double ntaxa = 1) {
+                   int n, int method, int threads = 1, double ntaxa = 1,
+                   NumericVector nnz = NumericVector(0), NumericVector shared = NumericVector(0)) {
   if (acc.size() != (R_xlen_t) n * (n - 1) / 2) stop("`acc` must have n * (n - 1) / 2 elements");
   double* out = acc.begin();
   #pragma omp parallel for schedule(dynamic, 16) num_threads(threads)
   for (int i = 0; i < n - 1; ++i) {
     R_xlen_t k = (R_xlen_t) i * (2 * (R_xlen_t) n - i - 1) / 2;
     for (int j = i + 1; j < n; ++j, ++k) {
-      if (method == 2 || method == 3) {
+      if (method == 4) {
+        const double d = total[i] + total[j] - 2 * out[k];
+        out[k] = d > 0 ? d : 0.0;
+      } else if (method == 5) {
+        const double both = shared[k];
+        const double union_size = nnz[i] + nnz[j] - both;
+        out[k] = union_size > 0 ? ((nnz[i] - both) + (nnz[j] - both) + out[k]) / union_size : NA_REAL;
+      } else if (method == 2 || method == 3) {
         double d2 = square[i] + square[j] - 2 * out[k];
         if (method == 3) d2 -= (total[i] - total[j]) * (total[i] - total[j]) / ntaxa;
         out[k] = d2 > 0 ? std::sqrt(d2) : 0.0;

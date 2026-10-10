@@ -206,8 +206,10 @@ Result objects keep the `vegan` classes (`dist`, and `rda` where feasible), so t
 
 ### `vegdist`
 
-- Indices: `bray`, `jaccard`, `euclidean`.
-  Later: `manhattan`, `canberra`.
+- Indices: `bray`, `jaccard`, `euclidean`, `manhattan`, `canberra` and `aitchison`.
+  Manhattan is `Σx_i + Σx_j − 2 Σ min(x_i, x_j)` and uses the same kernel as Bray–Curtis.
+  Canberra follows `vegan`: terms where both samples are zero are dropped and the sum is divided by the number of taxa in either sample, so it is `NA` between two all-zero samples.
+  It needs the number of shared taxa as well, which the kernel counts in the same pass.
 - Option: `binary`.
 - Bray–Curtis is `1 - 2·Σ min(x_i, x_j) / (Σ x_i + Σ x_j)`.
   Only taxa present in both samples contribute to the sum of minima.

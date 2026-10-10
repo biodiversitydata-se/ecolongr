@@ -6,7 +6,7 @@
 \usage{
 el_vegdist(
   x,
-  method = c("bray", "jaccard", "euclidean", "aitchison"),
+  method = c("bray", "jaccard", "euclidean", "aitchison", "manhattan", "canberra"),
   binary = FALSE,
   pseudocount = 1,
   samples = NULL,
@@ -25,9 +25,10 @@ has only such rows is kept as an all-zero sample. Negative values are
 allowed only for \code{method = "euclidean"} without \code{binary}, for example after
 \code{el_decostand(method = "rclr")}.}
 
-\item{method}{One of \code{"bray"}, \code{"jaccard"}, \code{"euclidean"} and \code{"aitchison"}, as
-in \code{\link[vegan:vegdist]{vegan::vegdist()}}. \code{"aitchison"} is the Euclidean distance between
-clr-transformed samples, computed from the counts.}
+\item{method}{One of \code{"bray"}, \code{"jaccard"}, \code{"euclidean"}, \code{"aitchison"},
+\code{"manhattan"} and \code{"canberra"}, as in \code{\link[vegan:vegdist]{vegan::vegdist()}}. \code{"aitchison"} is
+the Euclidean distance between clr-transformed samples, computed from the
+counts. \code{"canberra"} is \code{NA}, as in \code{vegan}, between two all-zero samples.}
 
 \item{binary}{If \code{TRUE}, use presence and absence instead of quantities.}
 

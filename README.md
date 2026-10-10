@@ -133,7 +133,7 @@ d <- el_vegdist(counts, "aitchison", pseudocount = "inverse_depth")
 
 | function | what it does | `vegan` equivalent |
 |---|---|---|
-| `el_vegdist()` | `bray`, `jaccard`, `euclidean` and `aitchison` dissimilarities, optionally `binary`; returns a `dist` | `vegdist()` |
+| `el_vegdist()` | `bray`, `jaccard`, `euclidean`, `manhattan`, `canberra` and `aitchison` dissimilarities, optionally `binary`; returns a `dist` | `vegdist()` |
 | `el_decostand()` | `total`, `hellinger`, `log`, `pa` and `rclr`, as a lazy long table | `decostand()` |
 | `el_rda()` | unconstrained PCA of the table or of its clr, the first `k` axes; returns an `rda` object | `rda()` |
 

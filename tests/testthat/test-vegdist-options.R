@@ -99,7 +99,7 @@ test_that("the sample order is alphabetical when `samples` is not given", {
 test_that("bad input is an error", {
   x <- long_table(synthetic_community())
 
-  expect_error(el_vegdist(x, method = "manhattan"), "should be one of")
+  expect_error(el_vegdist(x, method = "gower"), "should be one of")
   expect_error(el_vegdist(x, samples = c("s01", "s02")), "not in `samples`")
   expect_error(el_vegdist(dplyr::rename(x, abundance = quant)), "quant")
   expect_error(el_vegdist(transform(x, quant = -quant)), "negative")

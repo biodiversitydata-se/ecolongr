@@ -11,9 +11,10 @@
 #'   has only such rows is kept as an all-zero sample. Negative values are
 #'   allowed only for `method = "euclidean"` without `binary`, for example after
 #'   `el_decostand(method = "rclr")`.
-#' @param method One of `"bray"`, `"jaccard"`, `"euclidean"` and `"aitchison"`, as
-#'   in [vegan::vegdist()]. `"aitchison"` is the Euclidean distance between
-#'   clr-transformed samples, computed from the counts.
+#' @param method One of `"bray"`, `"jaccard"`, `"euclidean"`, `"aitchison"`,
+#'   `"manhattan"` and `"canberra"`, as in [vegan::vegdist()]. `"aitchison"` is
+#'   the Euclidean distance between clr-transformed samples, computed from the
+#'   counts. `"canberra"` is `NA`, as in `vegan`, between two all-zero samples.
 #' @param binary If `TRUE`, use presence and absence instead of quantities.
 #' @param pseudocount For `method = "aitchison"` only: added to the counts before
 #'   the clr. A positive number, `"inverse_depth"` for `1 / (the sample's total
@@ -40,7 +41,7 @@
 #' @param sample,taxon,quant Names of the columns in `x`.
 #' @return A `dist` object.
 #' @export
-el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean", "aitchison"), binary = FALSE,
+el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean", "aitchison", "manhattan", "canberra"), binary = FALSE,
                        pseudocount = 1, samples = NULL, batch_rows = 1e6, threads = NULL, memory_limit = NULL,
                        sample = "sample", taxon = "taxon", quant = "quant") {
   method <- match.arg(method)
@@ -83,18 +84,24 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean", "aitchison"
   }
 
   n <- length(samples)
-  total <- square <- numeric(n)
+  total <- square <- cells <- numeric(n)
   at <- match(totals$sample, samples)
   total[at] <- totals$total
   square[at] <- totals$square
+  cells[at] <- totals$cells
 
   acc <- numeric(n * (n - 1) / 2)
+  shared <- numeric(n * (n - 1) / 2)
   product <- method %in% c("euclidean", "aitchison")
+  canberra <- method == "canberra"
   stream_batches(stream, samples, batch_rows, function(rows) {
-    accumulate_pairs(acc, rows$sample, rows$taxon, rows$quant, n, product, threads = threads)
+    accumulate_pairs(acc, rows$sample, rows$taxon, rows$quant, n, product, threads = threads,
+                     canberra = canberra, count = if (canberra) shared else numeric(0))
   })
-  finalize_dist(acc, total, square, n, match(method, c("bray", "jaccard", "euclidean", "aitchison")) - 1L,
-                threads = threads, ntaxa = if (method == "aitchison") length(stream_taxa(stream)) else 1)
+  finalize_dist(acc, total, square, n,
+                match(method, c("bray", "jaccard", "euclidean", "aitchison", "manhattan", "canberra")) - 1L,
+                threads = threads, ntaxa = if (method == "aitchison") length(stream_taxa(stream)) else 1,
+                nnz = cells, shared = if (canberra) shared else numeric(0))
 
   structure(acc, Size = n, Labels = samples, Diag = FALSE, Upper = FALSE,
             method = method, class = "dist")
