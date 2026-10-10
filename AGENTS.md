@@ -25,3 +25,13 @@ Read it first.
 - `devtools::test()` runs the tests, `devtools::document()` regenerates `man/` and `NAMESPACE`, `devtools::check()` runs `R CMD check`.
 - `duckplyr::fallback_sitrep()` shows the fallback logging settings.
   Never upload fallback reports.
+
+## Performance and memory
+
+- The kernel is `src/kernel.cpp` (Rcpp, OpenMP).
+  Benchmark with an installed package: `devtools::load_all()` compiles with `-O0` and is about 10 times slower.
+- `bench/gen.R` makes a skewed synthetic table and `bench/run.R` times `el_vegdist()` on it with peak memory.
+- Run anything large on `sequoia` (24 cores, 125 GB, shared), not on the laptop (30 GB), and `nice` it.
+  The repository is cloned at `~/dev/ecolongr` there.
+- Peak memory is the reason for the design: the result (one number per pair of samples), one batch, and DuckDB's `memory_limit`.
+  The query's first step runs in the `duckplyr` connection, whose settings belong to the user's session and must not be changed.

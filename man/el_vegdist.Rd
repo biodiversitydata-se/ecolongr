@@ -38,8 +38,8 @@ A batch always holds whole taxa.}
 \code{ecolongr.threads}, or half of the cores. The result does not depend on it.}
 
 \item{memory_limit}{Memory DuckDB may use for sorting the table, such as
-\code{"500MB"}; it spills to disk beyond that. Defaults to the option
-\code{ecolongr.memory_limit}, or \code{"500MB"}. This is separate from the memory
+\code{"250MB"}; it spills to disk beyond that. Defaults to the option
+\code{ecolongr.memory_limit}, or \code{"250MB"}. This is separate from the memory
 used by R for the result and the current batch.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}.}

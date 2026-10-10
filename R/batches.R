@@ -4,7 +4,7 @@ utils::globalVariables("taxon")
 # DuckDB connection of our own, so that its memory limit and spill directory do
 # not touch the user's duckplyr session. The kernel reads integer ids in batches
 # that always hold whole taxa.
-open_taxon_stream <- function(x, binary = FALSE, memory_limit = "500MB", threads = 1L) {
+open_taxon_stream <- function(x, binary = FALSE, memory_limit = "250MB", threads = 1L) {
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   path <- tempfile(fileext = ".parquet")
   duckplyr::compute_parquet(x, path)

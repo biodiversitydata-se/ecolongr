@@ -20,8 +20,8 @@
 #' @param threads Number of threads for the pair kernel. Defaults to the option
 #'   `ecolongr.threads`, or half of the cores. The result does not depend on it.
 #' @param memory_limit Memory DuckDB may use for sorting the table, such as
-#'   `"500MB"`; it spills to disk beyond that. Defaults to the option
-#'   `ecolongr.memory_limit`, or `"500MB"`. This is separate from the memory
+#'   `"250MB"`; it spills to disk beyond that. Defaults to the option
+#'   `ecolongr.memory_limit`, or `"250MB"`. This is separate from the memory
 #'   used by R for the result and the current batch.
 #' @param sample,taxon,quant Names of the columns in `x`.
 #' @return A `dist` object.
@@ -40,10 +40,10 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = F
   }
   threads <- as.integer(threads)
 
-  if (is.null(memory_limit)) memory_limit <- getOption("ecolongr.memory_limit", "500MB")
+  if (is.null(memory_limit)) memory_limit <- getOption("ecolongr.memory_limit", "250MB")
   if (!is.character(memory_limit) || length(memory_limit) != 1 ||
       !grepl("^[0-9]+(\\.[0-9]+)? ?[KMGT]i?B$", memory_limit)) {
-    stop("`memory_limit` must be a single size such as \"500MB\"")
+    stop("`memory_limit` must be a single size such as \"250MB\"")
   }
 
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")

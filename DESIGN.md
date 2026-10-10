@@ -83,7 +83,8 @@ Each function keeps working lazily for as long as the operation allows, and mate
   Without `samples`, the sample set is the samples that occur in the table, and the documentation says so.
   In `asvoccur` the `events` table is the natural source.
 - **`decostand`:** lazy in, lazy out, as a long table.
-- **`vegdist`:** the computation is lazy.
+- **`vegdist`:** the lazy query is run by DuckDB and written to a temporary Parquet file.
+  A compiled kernel reads it in batches of whole taxa and adds up the pairs.
   The result is a `dist`, which is n × n and so materialized by definition.
 - **`rda` (PCA):** pulls only the non-zero triplets into R to build the sparse matrix for `irlba`.
   The size is the number of non-zero cells, not taxa × samples.
@@ -154,9 +155,30 @@ A scratch test on `vegan::varespec` as a long table:
 
 ### Cost
 
-The Bray–Curtis self-join produces, for each taxon, (number of samples containing it)² rows.
-A taxon present in every sample costs n².
-DuckDB aggregates before returning, so memory should be fine, but run time on large data is unmeasured.
+A many-to-many self-join on taxon produces, for each taxon, (number of samples containing it)² rows.
+On a skewed synthetic table (a few taxa in nearly every sample) this did not work as a DuckDB query:
+
+| samples | pair operations | DuckDB self-join | compiled kernel (first version) |
+|---|---|---|---|
+| 1,000 | 73M | 7.8 s, 2.9 GB | 0.7 s, 0.29 GB |
+| 2,000 | 343M | killed at 14.6 GB after 30 min; 34 s and 4.3 GB with `memory_limit` | 3.9 s, 0.39 GB |
+
+`el_vegdist()` therefore uses DuckDB only to select, sort and number the table, and a compiled kernel (`src/kernel.cpp`) to add up the pairs.
+The kernel adds into one vector of n(n−1)/2 numbers, in the order of a `dist` object, so no pair table is built.
+Samples are sorted within each taxon, blocks of sample ids are handled by one thread at a time, and the minima are computed in a vectorisable pass.
+The result is bit-identical for any number of threads.
+
+Measured on 5,000 samples, 11.1M table rows and 10.5 billion pair operations (a shared 24-core machine under load):
+
+| version | time | peak memory |
+|---|---|---|
+| first kernel | 478 s | 1.8 GB |
+| + sorting within taxa | 90 s | 1.6 GB |
+| + branch-free minima, own DuckDB connection, integer ids (1 thread) | 30 s | 0.77 GB |
+| same, 12 threads | 7.2 s | 1.0 GB |
+
+The peak is the `dist` (100 MB here), one batch, DuckDB's `memory_limit` for the sort (default 250 MB, spills to disk), and the first step, which writes the lazy query to Parquet in the `duckplyr` connection (about 570 MB of buffers at 24 threads, which belongs to the user's session and is left alone).
+Memory grows with the square of the number of samples: 1.6 GB for 20,000 samples and 10 GB for 50,000.
 
 ## Function names
 
@@ -244,8 +266,6 @@ If one of them already computes a measure correctly on sparse input, a thin wrap
 
 - Input contract: long table, sparse matrix, or both.
 - Which lazy-table classes to accept: `duckplyr_df` and `duckdb_tibble` only, or also `tbl_lazy` from `dbplyr`, Arrow datasets and plain data frames.
-- C++ (Rcpp) kernels, or DuckDB/`duckplyr` queries, for `vegdist`.
-  A query is simpler to write, a kernel is probably faster.
 - Whether to depend on `vegan`.
   It is needed for tests, and for returning compatible objects (`vegan::rda` class) if we choose to.
 - Whether `rda` should return an object of class `rda`, so that `vegan`'s `scores`, `plot` and `summary` work.
