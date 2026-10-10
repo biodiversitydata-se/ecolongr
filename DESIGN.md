@@ -96,14 +96,22 @@ library(duckplyr)
 library(ecolongr)
 
 counts <- read_parquet_duckdb("summary_tables/ampliseq.counts.parquet")
+taxonomy <- read_parquet_duckdb(
+  "summary_tables/ampliseq.taxonomy.DADA2.consolidated_most-specific.parquet"
+)
 
 nmds <- counts |>
+  semi_join(taxonomy, by = "asv_id") |>
   mutate(relab = count / sum(count), .by = sample) |>
   transmute(taxon = asv_id, sample, quant = relab) |>
   el_vegdist(method = "bray") |>
   vegan::metaMDS()
 ```
 
+- The `semi_join()` keeps the ASVs that have a row in the taxonomy table.
+  Taxonomy is assigned only after clustering and filtering, so this drops clustered-away and filtered ASVs from the counts.
+  The file name is for `--consolidate_taxonomies most-specific`; with one database it is `ampliseq.taxonomy.DADA2.<database>.parquet`.
+  A `filter()` on the taxonomy table, for example on `domain`, narrows the selection further before the join.
 - Everything before `el_vegdist()` is lazy.
   `el_vegdist()` runs the query and returns a `dist`; `metaMDS()` is plain `vegan`.
 - Use `.by =` for grouped work.
