@@ -178,6 +178,9 @@ Measured on 5,000 samples, 11.1M table rows and 10.5 billion pair operations (a 
 | same, 12 threads | 7.2 s | 1.0 GB |
 
 The peak is the `dist` (100 MB here), one batch, DuckDB's `memory_limit` for the sort (default 250 MB, spills to disk), and the first step, which writes the lazy query to Parquet in the `duckplyr` connection (about 570 MB of buffers at 24 threads, which belongs to the user's session and is left alone).
+Measured on 20,000 samples, 19.4M table rows and 60.5 billion pair operations: 25 s with 12 threads (148 s with one), peak 2.4 GB, of which the `dist` is 1.6 GB.
+A dense taxa × samples matrix for the same table (500,000 taxa) would be about 80 GB.
+
 Memory grows with the square of the number of samples: 1.6 GB for 20,000 samples and 10 GB for 50,000.
 
 ## Function names
