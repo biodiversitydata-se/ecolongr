@@ -71,6 +71,64 @@ vegan::scores(pca, display = "sites", choices = 1:2)
 `ecolongr` does not attach `duckplyr`.
 Attach it yourself, as above, to use its verbs on the table.
 
+### Filter before `clr`
+
+`clr` needs a prevalence filter on amplicon data (see below).
+With `duckplyr` verbs the filters stay lazy, so the table is still not read into R:
+
+```r
+n_samples <- counts |> summarise(n = n_distinct(sample)) |> pull(n)
+
+# ASVs present in at least 20% of the samples.
+common <- counts |>
+  summarise(prevalence = n_distinct(sample), .by = asv_id) |>
+  filter(prevalence >= 0.2 * n_samples) |>
+  select(asv_id)
+
+# Samples with at least 5,000 reads.
+deep <- counts |>
+  summarise(depth = sum(count, na.rm = TRUE), .by = sample) |>
+  filter(depth >= 5000) |>
+  select(sample)
+
+d <- counts |>
+  semi_join(common, by = "asv_id") |>
+  semi_join(deep, by = "sample") |>
+  transmute(sample, taxon = asv_id, quant = count) |>
+  el_vegdist("aitchison", pseudocount = "inverse_depth")
+```
+
+Two details:
+
+- `pseudocount = "inverse_depth"` uses the totals of the table it is given, which here is the filtered one.
+  To use each sample's depth from before filtering, compute it first and pass it by name:
+  `depth <- counts |> summarise(total = sum(count, na.rm = TRUE), .by = sample) |> as.data.frame()`, then
+  `pseudocount = setNames(1 / depth$total, depth$sample)`.
+- `duckplyr` translates few R functions.
+  `filter(.by = )` is not available (use `summarise(.by = )` and a join as above), `sum()` needs `na.rm = TRUE`, and a scalar with names, such as the result of `quantile()`, must go through `unname()`.
+
+### Data from `asvoccur`
+
+[`asvoccur`](https://github.com/biodiversitydata-se/asvoccur) reads datasets downloaded from the [Swedish ASV portal](https://asv-portal.biodiversitydata.se/).
+Download the dataset's ZIP archive from the portal in a browser and put it in a folder, then:
+
+```r
+loaded <- asvoccur::load_data("path/to/datasets")
+merged <- asvoccur::merge_data(loaded)
+
+# merged$counts is a sparse matrix, taxa in rows and events in columns.
+triplets <- Matrix::summary(merged$counts)
+counts <- data.frame(
+  sample = colnames(merged$counts)[triplets$j],
+  taxon = rownames(merged$counts)[triplets$i],
+  quant = triplets$x
+)
+d <- el_vegdist(counts, "aitchison", pseudocount = "inverse_depth")
+```
+
+`merged$events` has the sample metadata, with `eventID` matching the sample names.
+`asvoccur` does not yet have a long-table form of its own; [asvoccur#1](https://github.com/biodiversitydata-se/asvoccur/issues/1) proposes one.
+
 ## Functions
 
 | function | what it does | `vegan` equivalent |
