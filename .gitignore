@@ -3,3 +3,4 @@
 .RData
 *.Rcheck
 *.tar.gz
+tests/testthat/_problems/
