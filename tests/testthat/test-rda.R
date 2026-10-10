@@ -104,7 +104,7 @@ test_that("the result is a vegan rda object that vegan's tools accept", {
   grDevices::pdf(NULL)
   on.exit(grDevices::dev.off())
   expect_no_error(plot(got))
-  expect_no_error(vegan::screeplot(got))
+  expect_no_error(stats::screeplot(got))
 })
 
 test_that("species scores are named by taxon and site scores by sample", {

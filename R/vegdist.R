@@ -43,17 +43,8 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = F
     stop("`batch_rows` must be a positive number")
   }
 
-  if (is.null(threads)) threads <- getOption("ecolongr.threads", max(1L, parallel::detectCores() %/% 2L))
-  if (!is.numeric(threads) || length(threads) != 1 || is.na(threads) || threads < 1 || threads != round(threads)) {
-    stop("`threads` must be a positive whole number")
-  }
-  threads <- as.integer(threads)
-
-  if (is.null(memory_limit)) memory_limit <- getOption("ecolongr.memory_limit", "250MB")
-  if (!is.character(memory_limit) || length(memory_limit) != 1 ||
-      !grepl("^[0-9]+(\\.[0-9]+)? ?[KMGT]i?B$", memory_limit)) {
-    stop("`memory_limit` must be a single size such as \"250MB\"")
-  }
+  threads <- resolve_threads(threads)
+  memory_limit <- resolve_memory_limit(memory_limit)
 
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   x <- dplyr::select(x, sample = dplyr::all_of(sample), taxon = dplyr::all_of(taxon),

@@ -109,3 +109,9 @@ for_each_taxon_batch <- function(x, batch_rows, fun, samples = NULL) {
   if (is.null(samples)) samples <- sort(stream_summary(stream)$totals$sample)
   stream_batches(stream, samples, batch_rows, fun)
 }
+
+stream_taxa <- function(stream) {
+  DBI::dbGetQuery(stream$con, "
+    SELECT CAST(taxon AS VARCHAR) AS name, CAST(dense_rank() OVER (ORDER BY taxon) AS INTEGER) AS id
+    FROM (SELECT DISTINCT taxon FROM v WHERE quant <> 0) ORDER BY id")$name
+}
