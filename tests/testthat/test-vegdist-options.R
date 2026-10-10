@@ -105,3 +105,59 @@ test_that("bad input is an error", {
   expect_error(el_vegdist(transform(x, quant = -quant)), "negative")
   expect_error(el_vegdist(transform(x, quant = NA_real_)), "missing")
 })
+
+signed_community <- function() {
+  set.seed(8)
+  m <- synthetic_community()
+  nz <- which(m > 0)
+  m[nz] <- m[nz] * sample(c(-1, 1), length(nz), TRUE) + sample(c(0.25, -0.5), length(nz), TRUE)
+  m
+}
+
+test_that("euclidean accepts negative quantities and matches vegan", {
+  m <- signed_community()
+  expect_true(any(m < 0))
+
+  got <- el_vegdist(long_table_nonzero(m), method = "euclidean")
+
+  expect_equal(as_full_matrix(got), as_full_matrix(vegan::vegdist(m, "euclidean")), tolerance = 1e-10)
+})
+
+test_that("negative quantities are still an error for bray, jaccard and binary euclidean", {
+  x <- long_table_nonzero(signed_community())
+
+  expect_error(el_vegdist(x, method = "bray"), "negative")
+  expect_error(el_vegdist(x, method = "jaccard"), "negative")
+  expect_error(el_vegdist(x, method = "euclidean", binary = TRUE), "negative")
+})
+
+test_that("negative quantities and zero rows together: zeros are still ignored for euclidean", {
+  m <- signed_community()
+  x <- rbind(long_table_nonzero(m), data.frame(sample = "s04", taxon = "t59", quant = 0))
+
+  expect_equal(
+    as_full_matrix(el_vegdist(x, method = "euclidean")),
+    as_full_matrix(vegan::vegdist(m, "euclidean")),
+    tolerance = 1e-10
+  )
+})
+
+test_that("rclr then euclidean is vegan's robust Aitchison distance when there are no zeros", {
+  set.seed(4)
+  m <- matrix(rpois(15 * 12, 6) + 1, 15, 12, dimnames = list(sprintf("s%02d", 1:15), sprintf("t%02d", 1:12)))
+
+  got <- el_vegdist(el_decostand(long_table(m), "rclr"), method = "euclidean")
+
+  expect_equal(as_full_matrix(got), as_full_matrix(vegan::vegdist(m, "robust.aitchison")), tolerance = 1e-10)
+})
+
+test_that("rclr then euclidean treats absent cells as 0 when there are zeros", {
+  for (m in list(as.matrix(varespec), synthetic_community())) {
+    rclr <- vegan_decostand(m, "rclr")
+    rclr[is.na(rclr)] <- 0
+
+    got <- el_vegdist(el_decostand(long_table(m), "rclr"), method = "euclidean")
+
+    expect_equal(as_full_matrix(got), as_full_matrix(vegan::vegdist(rclr, "euclidean")), tolerance = 1e-10)
+  }
+})

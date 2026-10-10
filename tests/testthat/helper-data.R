@@ -55,3 +55,12 @@ vegan_decostand <- function(m, method, ...) {
   attr(out, "parameters") <- NULL
   out
 }
+
+long_table_nonzero <- function(m) {
+  d <- data.frame(
+    sample = rep(rownames(m), times = ncol(m)),
+    taxon = rep(colnames(m), each = nrow(m)),
+    quant = as.vector(as.matrix(m))
+  )
+  d[d$quant != 0, ]
+}
