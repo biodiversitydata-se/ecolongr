@@ -235,14 +235,16 @@ Implemented as `el_decostand()`; the result is a lazy `duckplyr` table and the t
   `vegan` 2.7-6 returns `NA` for zeros with `impute = FALSE`, and the non-zero cells equal `log(x) - mean(log(x[x > 0]))` exactly.
   Called without `impute`, it fills the zeros by matrix completion, so the reference call must pass `impute = FALSE`.
   In a long table the zeros are simply absent rows.
-- `rclr` is not `vegan`'s robust Aitchison distance when zeros are present.
-  `vegdist(method = "robust.aitchison")` is the Euclidean distance on `decostand(x, "rclr")` with the default `impute = TRUE` (Martino et al. 2019).
-  That step fills the missing cells by matrix completion (OptSpace, rank 3, 5 iterations) and then centres rows and columns to mean 0.
-  Filled values are estimates from all samples and taxa, and the centring changes the non-zero cells too, so the transform is global and cannot be a lazy within-sample query.
-  `el_vegdist(el_decostand(x, "rclr"), "euclidean")` instead treats an absent cell as 0, which puts the taxon at the sample's geometric mean.
+- `el_decostand("rclr")` leaves zeros absent, so a later step that reads absent cells as 0 puts those taxa at the sample's geometric mean.
+  That is not `vegan`'s robust Aitchison distance when zeros are present: `vegdist(method = "robust.aitchison")` is Euclidean distance on `decostand(x, "rclr")` with the default `impute = TRUE` (Martino et al. 2019).
+  That step fills the missing cells by rank-3 matrix completion (OptSpace, 5 iterations) and then centres rows and columns to mean 0, which also changes the non-zero cells.
   The two agree when the table has no zeros (tested).
   On the synthetic test table (80% zeros) they differ by up to 4.4 where the distances range up to 3.4.
-  There is no `vegan` oracle for the zero convention used here.
+- The completed version is implemented as `el_vegdist(method = "robust.aitchison")` and `el_rda(transform = "rclr")`, both from raw counts.
+  OptSpace runs on the observed cells only (the algorithm, constants and line search follow `vegan::optspace()`, and the result agrees to 1e-14), with Rcpp helpers for the sums over cells.
+  The completed matrix has rank 3: after centring it is `Xc S Yc'`, so distances come from the 3-column factors via a QR of `Yc`, and the PCA from an SVD of a 3 × 3 core.
+  `el_rda` therefore returns at most three axes, `scale = TRUE` is not available, and samples with no non-zero cell are rejected (they have nothing to complete from).
+  On the full LMO series (414 samples, 60,633 ASVs) it takes under two seconds, against 80 seconds for `vegan`'s dense completion, with the same seasonal R² (0.303).
 - `check = TRUE` (default) runs one query to stop on negative or missing quantities; `check = FALSE` is fully lazy.
 
 `clr` with a pseudocount has no long-table form, because it makes every cell non-zero.

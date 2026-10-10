@@ -133,9 +133,9 @@ d <- el_vegdist(counts, "aitchison", pseudocount = "inverse_depth")
 
 | function | what it does | `vegan` equivalent |
 |---|---|---|
-| `el_vegdist()` | `bray`, `jaccard`, `euclidean`, `manhattan`, `canberra` and `aitchison` dissimilarities, optionally `binary`; returns a `dist` | `vegdist()` |
+| `el_vegdist()` | `bray`, `jaccard`, `euclidean`, `manhattan`, `canberra`, `aitchison` and `robust.aitchison` dissimilarities, optionally `binary`; returns a `dist` | `vegdist()` |
 | `el_decostand()` | `total`, `hellinger`, `log`, `pa` and `rclr`, as a lazy long table | `decostand()` |
-| `el_rda()` | unconstrained PCA of the table or of its clr, the first `k` axes; returns an `rda` object | `rda()` |
+| `el_rda()` | unconstrained PCA of the table, of its clr or of its completed rclr, the first `k` axes; returns an `rda` object | `rda()` |
 
 `metaMDS()` and `adonis2()` only need a `dist`, so use `vegan`'s own on the result of `el_vegdist()`.
 
@@ -159,11 +159,11 @@ Conventions:
 Distances and standardisations equal `vegan`'s to about 1e-10, and PCA scores to about 1e-8 (1e-6 with the iterative solver on large tables), apart from the cases below.
 The tests compare every function and option with `vegan` on `varespec` and a synthetic community, including all-zero samples and explicit zero rows.
 
-- **`rclr` leaves zeros absent.**
-  `vegan`'s `decostand(x, "rclr")` fills them by matrix completion, which is a global step that also changes the non-zero cells.
-  `el_decostand("rclr")` matches `decostand(x, "rclr", impute = FALSE)`.
-  A later step that reads absent cells as 0 puts those taxa at the sample's geometric mean.
-  Euclidean distance on that is therefore not `vegan`'s `robust.aitchison` when the table has zeros, but it is identical when it has none.
+- **`el_decostand("rclr")` leaves zeros absent.**
+  `vegan`'s `decostand(x, "rclr")` fills them by matrix completion, a global step that also changes the non-zero cells; `el_decostand("rclr")` matches `decostand(x, "rclr", impute = FALSE)`.
+  A later step that reads absent cells as 0 puts those taxa at the sample's geometric mean, so Euclidean distance on it is not `vegan`'s `robust.aitchison` when the table has zeros.
+  For that, use `el_vegdist(method = "robust.aitchison")` or `el_rda(transform = "rclr")` on the raw counts: they run the same rank-3 completion as `vegan` on the observed cells only and agree with `vegan` to about 1e-6.
+  They need every sample to have at least one non-zero cell, and `el_rda(transform = "rclr")` returns at most three axes.
 - **`clr` needs a prevalence filter in practice.**
   On a 414-sample, 60,633-ASV time series with 99% zeros, PC1–PC2 of a `clr` PCA showed the seasonal cycle poorly (seasonal R² 0.28), but as well as Hellinger once ASVs present in fewer than 20% of the samples were removed (0.64).
   Filter with `duckplyr` verbs before the call, for example `semi_join()` against the ASVs with `n_distinct(sample) >= 0.2 * n_distinct(all samples)`.
