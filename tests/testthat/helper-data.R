@@ -64,3 +64,34 @@ long_table_nonzero <- function(m) {
   )
   d[d$quant != 0, ]
 }
+
+align_signs <- function(a, b) {
+  a <- as.matrix(a)
+  b <- as.matrix(b)
+  a * rep(sign(colSums(a * b)), each = nrow(a))
+}
+
+big_sparse_community <- function(n = 400, p = 1500, seed = 5) {
+  set.seed(seed)
+  m <- matrix(0, n, p, dimnames = list(sprintf("s%03d", seq_len(n)), sprintf("t%04d", seq_len(p))))
+  k <- 0.04 * n * p
+  idx <- sample(length(m), k)
+  m[idx] <- rpois(k, 4) + 1
+  m[, colSums(m) > 0, drop = FALSE]
+}
+
+compare_rda <- function(got, m, ..., k = 3, tolerance = 1e-8) {
+  ref <- vegan::rda(m, ...)
+  keep <- intersect(colnames(m), rownames(vegan::scores(got, choices = 1, display = "species")))
+
+  expect_equal(unname(vegan::eigenvals(got)[seq_len(k)]), unname(vegan::eigenvals(ref)[seq_len(k)]), tolerance = tolerance)
+  expect_equal(got$tot.chi, ref$tot.chi, tolerance = tolerance)
+  for (scaling in 1:3) {
+    s_got <- vegan::scores(got, choices = seq_len(k), scaling = scaling)
+    s_ref <- vegan::scores(ref, choices = seq_len(k), scaling = scaling)
+    sites_ref <- s_ref$sites[rownames(s_got$sites), , drop = FALSE]
+    species_ref <- s_ref$species[keep, , drop = FALSE]
+    expect_equal(unname(s_got$sites), unname(align_signs(sites_ref, s_got$sites)), tolerance = tolerance)
+    expect_equal(unname(s_got$species[keep, , drop = FALSE]), unname(align_signs(species_ref, s_got$species[keep, , drop = FALSE])), tolerance = tolerance)
+  }
+}
