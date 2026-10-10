@@ -11,6 +11,7 @@ el_vegdist(
   samples = NULL,
   batch_rows = 1e+06,
   threads = NULL,
+  memory_limit = NULL,
   sample = "sample",
   taxon = "taxon",
   quant = "quant"
@@ -35,6 +36,11 @@ A batch always holds whole taxa.}
 
 \item{threads}{Number of threads for the pair kernel. Defaults to the option
 \code{ecolongr.threads}, or half of the cores. The result does not depend on it.}
+
+\item{memory_limit}{Memory DuckDB may use for sorting the table, such as
+\code{"500MB"}; it spills to disk beyond that. Defaults to the option
+\code{ecolongr.memory_limit}, or \code{"500MB"}. This is separate from the memory
+used by R for the result and the current batch.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}.}
 }

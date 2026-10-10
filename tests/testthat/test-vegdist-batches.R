@@ -113,7 +113,7 @@ test_that("el_vegdist leaves the DuckDB settings of the duckplyr session alone",
 
 test_that("a memory_limit far below the table size spills to disk and gives the same result", {
   set.seed(9)
-  n <- 1.5e6
+  n <- 3e6
   x <- unique(data.frame(
     sample = sprintf("s%03d", sample.int(100, n, TRUE)),
     taxon = sprintf("t%06d", sample.int(200000, n, TRUE))
@@ -121,7 +121,7 @@ test_that("a memory_limit far below the table size spills to disk and gives the 
   x$quant <- rpois(nrow(x), 3) + 1
   withr::local_dir(withr::local_tempdir())
 
-  small <- el_vegdist(x, memory_limit = "10MB", threads = 1)
+  small <- el_vegdist(x, memory_limit = "50MB", threads = 1)
 
   expect_equal(list.files(all.files = TRUE, no.. = TRUE), character())
   expect_equal(as.numeric(small), as.numeric(el_vegdist(x, threads = 1)))

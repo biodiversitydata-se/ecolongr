@@ -1,21 +1,35 @@
 utils::globalVariables("taxon")
 
-# The query is written once to a temporary Parquet file sorted by taxon and then
-# read back through a connection of our own, so the rows a taxon spans are
-# contiguous and only one batch is in R at a time.
-open_taxon_stream <- function(x, binary = FALSE) {
+# The query is written to a temporary Parquet file, then sorted and numbered by a
+# DuckDB connection of our own, so that its memory limit and spill directory do
+# not touch the user's duckplyr session. The kernel reads integer ids in batches
+# that always hold whole taxa.
+open_taxon_stream <- function(x, binary = FALSE, memory_limit = "500MB", threads = 1L) {
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   path <- tempfile(fileext = ".parquet")
-  duckplyr::compute_parquet(dplyr::arrange(x, taxon), path)
+  duckplyr::compute_parquet(x, path)
+
   con <- DBI::dbConnect(duckdb::duckdb())
-  value <- if (binary) "1.0" else "quant"
-  DBI::dbExecute(con, sprintf("CREATE VIEW v AS SELECT sample, taxon, quant FROM read_parquet('%s')", path))
-  structure(list(con = con, path = path, value = value), class = "taxon_stream")
+  spill <- tempfile("ecolongr-spill")
+  dir.create(spill)
+  DBI::dbExecute(con, paste("SET memory_limit =", DBI::dbQuoteString(con, memory_limit)))
+  DBI::dbExecute(con, sprintf("SET threads = %d", as.integer(threads)))
+  DBI::dbExecute(con, paste("SET temp_directory =", DBI::dbQuoteString(con, spill)))
+  DBI::dbExecute(con, "SET preserve_insertion_order = false")
+  DBI::dbExecute(con, paste(
+    "CREATE VIEW v AS SELECT sample, taxon, quant FROM read_parquet(", DBI::dbQuoteString(con, path), ")"
+  ))
+
+  structure(
+    list(con = con, files = c(path, spill), sorted = tempfile(fileext = ".parquet"),
+         value = if (binary) "1.0" else "quant"),
+    class = "taxon_stream"
+  )
 }
 
 close_taxon_stream <- function(stream) {
   DBI::dbDisconnect(stream$con, shutdown = TRUE)
-  unlink(stream$path)
+  unlink(c(stream$files, stream$sorted), recursive = TRUE)
   invisible()
 }
 
@@ -28,14 +42,25 @@ stream_summary <- function(stream) {
     missing = bad$missing,
     negative = bad$negative,
     totals = DBI::dbGetQuery(stream$con, sprintf("
-      SELECT sample, sum(%1$s) AS total, sum(%1$s * %1$s) AS square
+      SELECT CAST(sample AS VARCHAR) AS sample, sum(%1$s) AS total, sum(%1$s * %1$s) AS square
       FROM v WHERE quant > 0 GROUP BY sample", stream$value))
   )
 }
 
-stream_batches <- function(stream, batch_rows, fun) {
-  res <- DBI::dbSendQuery(stream$con, sprintf(
-    "SELECT sample, taxon, %s AS quant FROM v WHERE quant > 0", stream$value))
+stream_batches <- function(stream, samples, batch_rows, fun) {
+  con <- stream$con
+  duckdb::duckdb_register(con, "sample_ids", data.frame(
+    sample = as.character(samples), id = seq_along(samples) - 1L
+  ))
+  on.exit(duckdb::duckdb_unregister(con, "sample_ids"), add = TRUE)
+
+  DBI::dbExecute(con, paste("COPY (SELECT * FROM (",
+    sprintf("SELECT s.id AS sample, CAST(dense_rank() OVER (ORDER BY v.taxon) AS INTEGER) AS taxon, %s AS quant", stream$value),
+    "FROM v JOIN sample_ids s ON CAST(v.sample AS VARCHAR) = s.sample WHERE v.quant > 0",
+    ") ORDER BY taxon) TO", DBI::dbQuoteString(con, stream$sorted), "(FORMAT PARQUET)"))
+
+  res <- DBI::dbSendQuery(con, paste(
+    "SELECT sample, taxon, quant FROM read_parquet(", DBI::dbQuoteString(con, stream$sorted), ")"))
   on.exit(DBI::dbClearResult(res), add = TRUE)
 
   carry <- NULL
@@ -59,8 +84,9 @@ stream_batches <- function(stream, batch_rows, fun) {
   invisible()
 }
 
-for_each_taxon_batch <- function(x, batch_rows, fun) {
+for_each_taxon_batch <- function(x, batch_rows, fun, samples = NULL) {
   stream <- open_taxon_stream(x)
   on.exit(close_taxon_stream(stream))
-  stream_batches(stream, batch_rows, fun)
+  if (is.null(samples)) samples <- sort(stream_summary(stream)$totals$sample)
+  stream_batches(stream, samples, batch_rows, fun)
 }

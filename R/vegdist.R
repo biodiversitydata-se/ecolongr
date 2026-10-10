@@ -19,11 +19,15 @@
 #'   A batch always holds whole taxa.
 #' @param threads Number of threads for the pair kernel. Defaults to the option
 #'   `ecolongr.threads`, or half of the cores. The result does not depend on it.
+#' @param memory_limit Memory DuckDB may use for sorting the table, such as
+#'   `"500MB"`; it spills to disk beyond that. Defaults to the option
+#'   `ecolongr.memory_limit`, or `"500MB"`. This is separate from the memory
+#'   used by R for the result and the current batch.
 #' @param sample,taxon,quant Names of the columns in `x`.
 #' @return A `dist` object.
 #' @export
 el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = FALSE,
-                       samples = NULL, batch_rows = 1e6, threads = NULL,
+                       samples = NULL, batch_rows = 1e6, threads = NULL, memory_limit = NULL,
                        sample = "sample", taxon = "taxon", quant = "quant") {
   method <- match.arg(method)
   if (!is.numeric(batch_rows) || length(batch_rows) != 1 || is.na(batch_rows) || batch_rows < 1) {
@@ -36,11 +40,17 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = F
   }
   threads <- as.integer(threads)
 
+  if (is.null(memory_limit)) memory_limit <- getOption("ecolongr.memory_limit", "500MB")
+  if (!is.character(memory_limit) || length(memory_limit) != 1 ||
+      !grepl("^[0-9]+(\\.[0-9]+)? ?[KMGT]i?B$", memory_limit)) {
+    stop("`memory_limit` must be a single size such as \"500MB\"")
+  }
+
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   x <- dplyr::select(x, sample = dplyr::all_of(sample), taxon = dplyr::all_of(taxon),
                      quant = dplyr::all_of(quant))
 
-  stream <- open_taxon_stream(x, binary)
+  stream <- open_taxon_stream(x, binary, memory_limit = memory_limit, threads = threads)
   on.exit(close_taxon_stream(stream))
 
   summary <- stream_summary(stream)
@@ -67,10 +77,8 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = F
 
   acc <- numeric(n * (n - 1) / 2)
   product <- method == "euclidean"
-  stream_batches(stream, batch_rows, function(rows) {
-    taxon_id <- cumsum(c(TRUE, rows$taxon[-1] != rows$taxon[-nrow(rows)]))
-    accumulate_pairs(acc, match(rows$sample, samples) - 1L, as.integer(taxon_id),
-                     rows$quant, n, product, threads = threads)
+  stream_batches(stream, samples, batch_rows, function(rows) {
+    accumulate_pairs(acc, rows$sample, rows$taxon, rows$quant, n, product, threads = threads)
   })
   finalize_dist(acc, total, square, n, match(method, c("bray", "jaccard", "euclidean")) - 1L, threads = threads)
 
