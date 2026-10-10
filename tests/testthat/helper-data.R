@@ -95,3 +95,20 @@ compare_rda <- function(got, m, ..., k = 3, tolerance = 1e-8) {
     expect_equal(unname(s_got$species[keep, , drop = FALSE]), unname(align_signs(species_ref, s_got$species[keep, , drop = FALSE])), tolerance = tolerance)
   }
 }
+
+lmo_subset <- function() {
+  d <- utils::read.delim(gzfile(testthat::test_path("fixtures", "lmo_subset.tsv.gz")), stringsAsFactors = FALSE)
+  long <- data.frame(sample = d$sample, taxon = d$asv_id, quant = d$count)
+  m <- matrix(0, length(unique(long$sample)), length(unique(long$taxon)),
+              dimnames = list(sort(unique(long$sample)), sort(unique(long$taxon))))
+  m[cbind(match(long$sample, rownames(m)), match(long$taxon, colnames(m)))] <- long$quant
+  list(long = long, matrix = m)
+}
+
+present_taxa <- function(m) m[, colSums(m) > 0, drop = FALSE]
+
+clr_reference <- function(m, pseudocount) {
+  pc <- if (length(pseudocount) == 1) rep(pseudocount, nrow(m)) else pseudocount[rownames(m)]
+  y <- log(m + pc)
+  y - rowMeans(y)
+}
