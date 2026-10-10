@@ -1,0 +1,18 @@
+Package: ecolongr
+Type: Package
+Title: Community Ecology Analyses on Long Tables
+Version: 0.0.0.9000
+Authors@R: person("Daniel", "Lundin", email = "matricaria.suaveolens@gmail.com", role = c("aut", "cre"))
+Description: Distances, transformations and ordination for community data kept
+    as long tables without zeros, computed lazily with 'duckplyr' so that the
+    full taxa by samples matrix is never held in memory. Results are tested
+    against 'vegan'.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Config/testthat/edition: 3
+Imports:
+    duckplyr
+Suggests:
+    testthat (>= 3.0.0),
+    vegan
