@@ -1,6 +1,5 @@
-# longvegan: design
+# ecolongr: design
 
-Working name.
 Status: draft for discussion, nothing implemented.
 
 ## Problem
@@ -50,22 +49,34 @@ Both can be revisited if profiling says otherwise.
 The `duckplyr` direction is below; the exact input classes are open.
 Candidates:
 
-1. A long table with columns `sample`, `taxon`, `count`, as a data frame, an Arrow dataset or a DuckDB table.
+1. A long table with columns `sample`, `taxon`, `quant`, as a data frame, an Arrow dataset or a DuckDB table.
 2. A `dgCMatrix` (taxa × samples) built from (1) after selection.
 
 A sparse matrix is the natural in-memory format for the linear algebra (`irlba`, `RSpectra`, C++ kernels).
 The problem to avoid is the dense conversion, not the sparse matrix.
 The intended flow is therefore: query the long table, select, build a sparse matrix only where an algorithm needs one.
 
+## Data sources
+
+- [nf-core/ampliseq](https://nf-co.re/ampliseq) 3.0.0 and later write `summary_tables/ampliseq.counts.parquet`: a long table with columns `asv_id`, `sample` and `count`, zero rows dropped.
+  It is DADA2 output before clustering and filtering, so it exists only with `--asv_calling dada2`.
+- The same directory has one taxonomy table per classifier and database, keyed by `asv_id`, with flag columns such as `ampliseq_accept`.
+  Join on `asv_id` to select ASVs, for example only those that passed all filters.
+- `asvoccur` (see above) is the other source: public SBDI data, with `eventID` and `taxonID` in place of `sample` and `asv_id`.
+
+Both give a long table with a sample, a taxon and a count, which is the input contract below.
+A small subset of the ampliseq tables is a candidate test fixture beside the `vegan` data sets.
+
 ## duckplyr interface
 
-Users filter, join and reshape with `duckplyr` verbs, then pass the unevaluated table to `longvegan`.
+Users filter, join and reshape with `duckplyr` verbs, then pass the unevaluated table to `ecolongr`.
 Each function keeps working lazily for as long as the operation allows, and materializes only where it must.
 
 ### Contract
 
-- **Input:** a lazy table (`duckplyr_df` or `duckdb_tibble`) with a sample, a taxon and a count column.
-  The column names are arguments with defaults.
+- **Input:** a lazy table (`duckplyr_df` or `duckdb_tibble`) with a sample, a taxon and a quantity column, by default `sample`, `taxon` and `quant`.
+  The column names are arguments.
+  The quantity is called `quant` and not `count`, because it may be a relative abundance or a transformed value.
   A plain data frame is converted on entry.
 - **`samples` (optional):** a lazy table or vector of sample IDs defining the full set of samples.
   A long table without zeros cannot show a sample whose counts are all zero, so such a sample is silently absent unless `samples` lists it.
@@ -77,6 +88,29 @@ Each function keeps working lazily for as long as the operation allows, and mate
 - **`rda` (PCA):** pulls only the non-zero triplets into R to build the sparse matrix for `irlba`.
   The size is the number of non-zero cells, not taxa × samples.
 - Each function documents where it materializes.
+
+### Example
+
+```r
+library(duckplyr)
+library(ecolongr)
+
+counts <- read_parquet_duckdb("summary_tables/ampliseq.counts.parquet")
+
+nmds <- counts |>
+  mutate(relab = count / sum(count), .by = sample) |>
+  transmute(taxon = asv_id, sample, quant = relab) |>
+  el_vegdist(method = "bray") |>
+  vegan::metaMDS()
+```
+
+- Everything before `el_vegdist()` is lazy.
+  `el_vegdist()` runs the query and returns a `dist`; `metaMDS()` is plain `vegan`.
+- Use `.by =` for grouped work.
+  `group_by()` is not translated by `duckplyr`: it falls back to `dplyr` and materializes (checked 2026-10-10).
+- The example renames to the default column names with `transmute()`.
+- `ecolongr` does not attach `duckplyr`.
+  Attaching `duckplyr` replaces `dplyr` verbs for data frames, which is a choice for the user's session, not for a package.
 
 ### Silent fallback
 
@@ -97,6 +131,7 @@ A scratch test on `vegan::varespec` as a long table:
 - `rclr` as `mutate(log(count) - mean(log(count)), .by = sample)` ran lazily.
   Its output has not yet been compared with `vegan`.
   The same formula in base R matches `decostand(..., "rclr", impute = FALSE)` exactly on the non-zero cells.
+- `mutate(relab = count / sum(count), .by = sample)` and `transmute()` stayed lazy; `group_by()` followed by `mutate()` fell back and materialized.
 - `mutate(z = rev(count), .by = sample)` fell back to `dplyr` and materialized.
 
 ### Cost
@@ -107,16 +142,15 @@ DuckDB aggregates before returning, so memory should be fine, but run time on la
 
 ## Function names
 
-Recommendation: a prefix, for example `lv_vegdist`, `lv_decostand`, `lv_rda`.
+Decision: the prefix `el_`, for example `el_vegdist`, `el_decostand`, `el_rda`.
 
 - The functions are not drop-in replacements: the input is a lazy long table, only a subset of the options exists, and `rda` returns the first *k* axes.
-- With the same names, `library(vegan); library(longvegan)` masks `vegdist`, `decostand` and `rda`.
+- With the same names, `library(vegan); library(ecolongr)` masks `vegdist`, `decostand` and `rda`.
   Old scripts then fail confusingly, or silently call the wrong function.
 - `vegan::vegdist` is a plain function, not an S3 generic, so a method for our input class cannot coexist with it.
-- Writing `longvegan::vegdist()` avoids the clash, but only if every example and user script does so.
+- Writing `ecolongr::vegdist()` avoids the clash, but only if every example and user script does so.
 - A prefix lets both packages be attached, and shows in each call which one is meant.
   It also groups the functions in autocompletion.
-- The prefix should follow the package name, so it changes if the package is renamed.
 
 Result objects keep the `vegan` classes (`dist`, and `rda` where feasible), so that `vegan::metaMDS`, `vegan::adonis2`, `scores()` and `plot()` work on them.
 
@@ -190,9 +224,6 @@ If one of them already computes a measure correctly on sparse input, a thin wrap
 
 ## Open questions
 
-- Package name, and whether it belongs under the same organisation as `asvoccur`.
-- Function names: prefix (recommended) or the `vegan` names.
-  If a prefix, which one.
 - Input contract: long table, sparse matrix, or both.
 - Which lazy-table classes to accept: `duckplyr_df` and `duckdb_tibble` only, or also `tbl_lazy` from `dbplyr`, Arrow datasets and plain data frames.
 - How to make an unexpected materialization an error, if `duckplyr` provides no switch for it.
