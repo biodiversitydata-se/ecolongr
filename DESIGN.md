@@ -102,7 +102,7 @@ taxonomy <- read_parquet_duckdb(
 
 nmds <- counts |>
   semi_join(taxonomy, by = "asv_id") |>
-  mutate(relab = count / sum(count), .by = sample) |>
+  mutate(relab = count / sum(count, na.rm = TRUE), .by = sample) |>
   transmute(taxon = asv_id, sample, quant = relab) |>
   el_vegdist(method = "bray") |>
   vegan::metaMDS()
@@ -115,7 +115,10 @@ nmds <- counts |>
 - Everything before `el_vegdist()` is lazy.
   `el_vegdist()` runs the query and returns a `dist`; `metaMDS()` is plain `vegan`.
 - Use `.by =` for grouped work.
-  `group_by()` is not translated by `duckplyr`: it falls back to `dplyr` and materializes (checked 2026-10-10).
+  `group_by()` is not translated by `duckplyr`: it falls back to `dplyr` and materializes.
+- Window functions need `na.rm = TRUE`: `sum(count)` inside `mutate(.by = )` is not translated, `sum(count, na.rm = TRUE)` is.
+  The same holds for `mean()`.
+  The example above was checked on a stingy frame (see below) on 2026-10-10.
 - The example renames to the default column names with `transmute()`.
 - `ecolongr` does not attach `duckplyr`.
   Attaching `duckplyr` replaces `dplyr` verbs for data frames, which is a choice for the user's session, not for a package.
@@ -127,19 +130,26 @@ The only sign is the `duckplyr: materializing` message, shown with `options(duck
 For a package whose purpose is saving memory this must not happen unnoticed, so:
 
 - Every function needs a test that its pipeline stays lazy until the documented materialization point.
-- A guard should turn an unexpected materialization into an error.
-  How `duckplyr` allows this is not yet checked (see `?duckplyr::fallback_config`).
+- `duckplyr` has no switch that turns a fallback into an error; `fallback_config()` only controls logging and uploading, by design.
+  The guard is the `prudence` of the frame.
+  A frame made with `as_duckdb_tibble(x, prudence = "stingy")` raises "This operation cannot be carried out by DuckDB" on any verb that would fall back, and `collect()` or `as.data.frame()` on a query DuckDB can run still work.
+- Every function converts its input with `prudence = "stingy"`, so an untranslatable verb inside `ecolongr` is an error, not a silent copy.
+- `as_duckdb_tibble()` on a frame that is already a `duckplyr_df` returns a lavish one, so the guard is applied by the function and does not depend on what the user passed.
+- Users can do the same in their own pipelines by making the first table stingy.
+  `ecolongr` cannot see a fallback that happened before the table reached it.
 
 ### Evidence so far
 
 A scratch test on `vegan::varespec` as a long table:
 
-- `semi_join`, `filter`, a many-to-many self-join on taxon, grouped `summarise`, further joins and `mutate` all stayed lazy until `as.data.frame()`.
+- `semi_join`, `filter`, a many-to-many self-join on taxon, grouped `summarise`, further joins and `if_else` inside `summarise` run on a stingy frame.
 - Bray–Curtis built from that pipeline matched `vegan::vegdist` to about 5e-16 over 66 sample pairs.
-- `rclr` as `mutate(log(count) - mean(log(count)), .by = sample)` ran lazily.
+- `rclr` as `mutate(log(count) - mean(log(count), na.rm = TRUE), .by = sample)` runs on a stingy frame.
+  Without `na.rm = TRUE` it falls back.
+  An earlier version of this document said the version without `na.rm` ran lazily; that was judged from the result class and was wrong.
   Its output has not yet been compared with `vegan`.
   The same formula in base R matches `decostand(..., "rclr", impute = FALSE)` exactly on the non-zero cells.
-- `mutate(relab = count / sum(count), .by = sample)` and `transmute()` stayed lazy; `group_by()` followed by `mutate()` fell back and materialized.
+- `mutate(relab = count / sum(count, na.rm = TRUE), .by = sample)` and `transmute()` run on a stingy frame; `group_by()` and `sum(count)` without `na.rm` do not.
 - `mutate(z = rev(count), .by = sample)` fell back to `dplyr` and materialized.
 
 ### Cost
@@ -234,7 +244,6 @@ If one of them already computes a measure correctly on sparse input, a thin wrap
 
 - Input contract: long table, sparse matrix, or both.
 - Which lazy-table classes to accept: `duckplyr_df` and `duckdb_tibble` only, or also `tbl_lazy` from `dbplyr`, Arrow datasets and plain data frames.
-- How to make an unexpected materialization an error, if `duckplyr` provides no switch for it.
 - C++ (Rcpp) kernels, or DuckDB/`duckplyr` queries, for `vegdist`.
   A query is simpler to write, a kernel is probably faster.
 - Whether to depend on `vegan`.
