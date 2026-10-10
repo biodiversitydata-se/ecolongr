@@ -13,7 +13,7 @@ open_taxon_stream <- function(x, binary = FALSE, memory_limit = "250MB", threads
   spill <- tempfile("ecolongr-spill")
   dir.create(spill)
   DBI::dbExecute(con, paste("SET memory_limit =", DBI::dbQuoteString(con, memory_limit)))
-  DBI::dbExecute(con, sprintf("SET threads = %d", as.integer(threads)))
+  DBI::dbExecute(con, sprintf("SET threads = %d", min(as.integer(threads), 4L)))
   DBI::dbExecute(con, paste("SET temp_directory =", DBI::dbQuoteString(con, spill)))
   DBI::dbExecute(con, "SET preserve_insertion_order = false")
   DBI::dbExecute(con, paste(
@@ -54,10 +54,19 @@ stream_batches <- function(stream, samples, batch_rows, fun) {
   ))
   on.exit(duckdb::duckdb_unregister(con, "sample_ids"), add = TRUE)
 
-  DBI::dbExecute(con, paste("COPY (SELECT * FROM (",
-    sprintf("SELECT s.id AS sample, CAST(dense_rank() OVER (ORDER BY v.taxon) AS INTEGER) AS taxon, %s AS quant", stream$value),
-    "FROM v JOIN sample_ids s ON CAST(v.sample AS VARCHAR) = s.sample WHERE v.quant > 0",
-    ") ORDER BY taxon) TO", DBI::dbQuoteString(con, stream$sorted), "(FORMAT PARQUET)"))
+  sort_to_file <- function() {
+    unlink(stream$sorted)
+    DBI::dbExecute(con, paste("COPY (SELECT * FROM (",
+      sprintf("SELECT s.id AS sample, CAST(dense_rank() OVER (ORDER BY v.taxon) AS INTEGER) AS taxon, %s AS quant", stream$value),
+      "FROM v JOIN sample_ids s ON CAST(v.sample AS VARCHAR) = s.sample WHERE v.quant > 0",
+      ") ORDER BY taxon) TO", DBI::dbQuoteString(con, stream$sorted), "(FORMAT PARQUET)"))
+  }
+  # Each DuckDB thread needs tens of MB; with a small limit, one thread still works.
+  tryCatch(sort_to_file(), error = function(e) {
+    if (!grepl("Out of Memory", conditionMessage(e), fixed = TRUE)) stop(e)
+    DBI::dbExecute(con, "SET threads = 1")
+    sort_to_file()
+  })
 
   res <- DBI::dbSendQuery(con, paste(
     "SELECT sample, taxon, quant FROM read_parquet(", DBI::dbQuoteString(con, stream$sorted), ")"))

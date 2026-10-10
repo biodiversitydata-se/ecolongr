@@ -29,3 +29,11 @@ vegan_reference <- function(m, method, binary, empty = character()) {
   full <- rbind(m, matrix(0, length(empty), ncol(m), dimnames = list(empty, colnames(m))))
   suppressWarnings(vegan::vegdist(full, method = method, binary = binary))
 }
+
+batch_table <- function() {
+  data.frame(
+    sample = c("a", "b", "c", "a", "b", "a", "c", "d", "e", "e"),
+    taxon  = c("t3", "t3", "t3", "t1", "t1", "t2", "t2", "t2", "t2", "t4"),
+    quant  = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+  )
+}

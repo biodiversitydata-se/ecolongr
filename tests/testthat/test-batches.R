@@ -1,11 +1,3 @@
-batch_table <- function() {
-  data.frame(
-    sample = c("a", "b", "c", "a", "b", "a", "c", "d", "e", "e"),
-    taxon  = c("t3", "t3", "t3", "t1", "t1", "t2", "t2", "t2", "t2", "t4"),
-    quant  = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-  )
-}
-
 collect_batches <- function(x, batch_rows, samples = NULL) {
   out <- list()
   for_each_taxon_batch(x, batch_rows, function(b) out[[length(out) + 1]] <<- b, samples = samples)

@@ -126,3 +126,30 @@ test_that("a memory_limit far below the table size spills to disk and gives the 
   expect_equal(list.files(all.files = TRUE, no.. = TRUE), character())
   expect_equal(as.numeric(small), as.numeric(el_vegdist(x, threads = 1)))
 })
+
+test_that("DuckDB sorts with at most four threads however many the kernel uses", {
+  x <- batch_table()
+  stream <- open_taxon_stream(x, memory_limit = "250MB", threads = 12L)
+  on.exit(close_taxon_stream(stream))
+
+  threads <- DBI::dbGetQuery(stream$con, "SELECT current_setting('threads') AS t")$t
+  expect_lte(as.numeric(threads), 4)
+
+  small <- open_taxon_stream(x, memory_limit = "250MB", threads = 2L)
+  on.exit(close_taxon_stream(small), add = TRUE)
+  expect_equal(as.numeric(DBI::dbGetQuery(small$con, "SELECT current_setting('threads') AS t")$t), 2)
+})
+
+test_that("a memory_limit too small for the sort threads retries with fewer and still gives the result", {
+  set.seed(9)
+  n <- 3e6
+  x <- unique(data.frame(
+    sample = sprintf("s%03d", sample.int(100, n, TRUE)),
+    taxon = sprintf("t%06d", sample.int(200000, n, TRUE))
+  ))
+  x$quant <- rpois(nrow(x), 3) + 1
+
+  got <- el_vegdist(x, memory_limit = "30MB", threads = 8)
+
+  expect_equal(as.numeric(got), as.numeric(el_vegdist(x, threads = 1)))
+})
