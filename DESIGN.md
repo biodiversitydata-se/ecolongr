@@ -23,6 +23,9 @@ Re-implement a small subset of `vegan`, taking a long table (or a sparse matrix 
   Anything that only needs a distance matrix is left to `vegan`.
 - Constrained ordination, in the first versions.
 - Matrix completion (`decostand(impute = TRUE)`).
+- Plotting, including `ggplot2` interfaces.
+  Result objects keep the `vegan` classes, so existing tools that plot `vegan` objects (`ggvegan`, `ggordiplots`, `microViz`) should work on them.
+  Which of these are maintained and cover `rda` and `dist` has not been checked.
 
 ## Where the memory goes
 
