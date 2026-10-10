@@ -4,3 +4,7 @@
 *.Rcheck
 *.tar.gz
 tests/testthat/_problems/
+tests/testthat/testthat-problems.rds
+src/*.o
+src/*.so
+src/*.dll
