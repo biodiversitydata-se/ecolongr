@@ -9,6 +9,7 @@ el_vegdist(
   method = c("bray", "jaccard", "euclidean"),
   binary = FALSE,
   samples = NULL,
+  batch_rows = 5e+06,
   sample = "sample",
   taxon = "taxon",
   quant = "quant"
@@ -28,12 +29,18 @@ of the result. Samples in \code{samples} that are absent from \code{x} are treat
 all zero. Without it, the samples that occur in \code{x} are used, in
 alphabetical order.}
 
+\item{batch_rows}{Approximate number of table rows held in R at a time.
+A batch always holds whole taxa.}
+
 \item{sample, taxon, quant}{Names of the columns in \code{x}.}
 }
 \value{
 A \code{dist} object.
 }
 \description{
-Computes the distance in the database from a table without zeros.
-Only the sample pairs sharing at least one taxon are collected into R.
+Computes the distance from a table without zeros.
+The query is run by DuckDB and written to a temporary Parquet file sorted by
+taxon. A compiled kernel then reads it in batches and adds up the shared
+quantities for every pair of samples, so the memory used is the result
+(one number per pair of samples) plus one batch.
 }

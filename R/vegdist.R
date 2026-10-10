@@ -1,9 +1,10 @@
-utils::globalVariables(c("sample_a", "sample_b", "quant_a", "quant_b"))
-
 #' Dissimilarity from a long table
 #'
-#' Computes the distance in the database from a table without zeros.
-#' Only the sample pairs sharing at least one taxon are collected into R.
+#' Computes the distance from a table without zeros.
+#' The query is run by DuckDB and written to a temporary Parquet file sorted by
+#' taxon. A compiled kernel then reads it in batches and adds up the shared
+#' quantities for every pair of samples, so the memory used is the result
+#' (one number per pair of samples) plus one batch.
 #'
 #' @param x A data frame or lazy `duckplyr` table with one row per non-zero
 #'   sample and taxon. Rows with `quant == 0` are ignored.
@@ -14,40 +15,39 @@ utils::globalVariables(c("sample_a", "sample_b", "quant_a", "quant_b"))
 #'   of the result. Samples in `samples` that are absent from `x` are treated as
 #'   all zero. Without it, the samples that occur in `x` are used, in
 #'   alphabetical order.
+#' @param batch_rows Approximate number of table rows held in R at a time.
+#'   A batch always holds whole taxa.
 #' @param sample,taxon,quant Names of the columns in `x`.
 #' @return A `dist` object.
 #' @export
 el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = FALSE,
-                       samples = NULL, sample = "sample", taxon = "taxon", quant = "quant") {
+                       samples = NULL, batch_rows = 5e6,
+                       sample = "sample", taxon = "taxon", quant = "quant") {
   method <- match.arg(method)
+  if (!is.numeric(batch_rows) || length(batch_rows) != 1 || is.na(batch_rows) || batch_rows < 1) {
+    stop("`batch_rows` must be a positive number")
+  }
 
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   x <- dplyr::select(x, sample = dplyr::all_of(sample), taxon = dplyr::all_of(taxon),
                      quant = dplyr::all_of(quant))
 
-  checks <- as.data.frame(dplyr::summarise(
-    x,
-    missing = sum(dplyr::if_else(is.na(quant), 1L, 0L)),
-    negative = sum(dplyr::if_else(quant < 0, 1L, 0L), na.rm = TRUE)
-  ))
-  if (isTRUE(checks$missing > 0)) stop("`", quant, "` has missing values")
-  if (isTRUE(checks$negative > 0)) stop("`", quant, "` has negative values")
+  stream <- open_taxon_stream(x, binary)
+  on.exit(close_taxon_stream(stream))
 
-  x <- dplyr::filter(x, quant > 0)
-  if (binary) x <- dplyr::mutate(x, quant = 1)
+  summary <- stream_summary(stream)
+  if (summary$missing > 0) stop("`", quant, "` has missing values")
+  if (summary$negative > 0) stop("`", quant, "` has negative values")
 
-  totals <- as.data.frame(dplyr::summarise(
-    x, total = sum(quant), square = sum(quant * quant), .by = sample
-  ))
+  totals <- summary$totals
   totals$sample <- as.character(totals$sample)
-
   if (is.null(samples)) {
     samples <- sort(totals$sample)
   } else {
     samples <- as.character(samples)
-    missing <- setdiff(totals$sample, samples)
-    if (length(missing) > 0) {
-      stop("Samples in `x` but not in `samples`: ", paste(utils::head(missing, 5), collapse = ", "))
+    unlisted <- setdiff(totals$sample, samples)
+    if (length(unlisted) > 0) {
+      stop("Samples in `x` but not in `samples`: ", paste(utils::head(unlisted, 5), collapse = ", "))
     }
   }
 
@@ -57,40 +57,15 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = F
   total[at] <- totals$total
   square[at] <- totals$square
 
-  a <- dplyr::rename(x, sample_a = sample, quant_a = quant)
-  b <- dplyr::rename(x, sample_b = sample, quant_b = quant)
-  shared <- dplyr::filter(
-    dplyr::inner_join(a, b, by = "taxon", relationship = "many-to-many"),
-    sample_a < sample_b
-  )
-  shared <- if (method == "euclidean") {
-    dplyr::summarise(shared, overlap = sum(quant_a * quant_b), .by = c(sample_a, sample_b))
-  } else {
-    dplyr::summarise(
-      shared,
-      overlap = sum(dplyr::if_else(quant_a < quant_b, quant_a, quant_b)),
-      .by = c(sample_a, sample_b)
-    )
-  }
-  shared <- as.data.frame(shared)
-  i <- match(as.character(shared$sample_a), samples)
-  j <- match(as.character(shared$sample_b), samples)
+  acc <- numeric(n * (n - 1) / 2)
+  product <- method == "euclidean"
+  stream_batches(stream, batch_rows, function(rows) {
+    taxon_id <- cumsum(c(TRUE, rows$taxon[-1] != rows$taxon[-nrow(rows)]))
+    accumulate_pairs(acc, match(rows$sample, samples) - 1L, as.integer(taxon_id),
+                     rows$quant, n, product)
+  })
+  finalize_dist(acc, total, square, n, match(method, c("bray", "jaccard", "euclidean")) - 1L)
 
-  if (method == "euclidean") {
-    d <- sqrt(outer(square, square, "+"))
-    value <- sqrt(pmax(square[i] + square[j] - 2 * shared$overlap, 0))
-  } else {
-    d <- matrix(1, n, n)
-    value <- 1 - 2 * shared$overlap / (total[i] + total[j])
-    if (method == "jaccard") value <- 2 * value / (1 + value)
-    d[outer(total == 0, total == 0, "&")] <- NaN
-  }
-  d[cbind(i, j)] <- value
-  d[cbind(j, i)] <- value
-  diag(d) <- 0
-  dimnames(d) <- list(samples, samples)
-
-  out <- stats::as.dist(d)
-  attr(out, "method") <- method
-  out
+  structure(acc, Size = n, Labels = samples, Diag = FALSE, Upper = FALSE,
+            method = method, class = "dist")
 }

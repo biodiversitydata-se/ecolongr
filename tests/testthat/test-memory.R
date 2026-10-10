@@ -5,7 +5,7 @@ peak_extra_mb <- function(n_samples, n_taxa, n_draws) {
   pkg <- system.file(package = "ecolongr")
   script <- tempfile(fileext = ".R")
   writeLines(sprintf('
-    suppressMessages(if (dir.exists(file.path("%s", "R"))) pkgload::load_all("%s", quiet = TRUE) else library(ecolongr))
+    suppressMessages(if (dir.exists(file.path("%s", "Meta"))) library(ecolongr) else pkgload::load_all("%s", quiet = TRUE))
     set.seed(1)
     p <- 1 / (1:%d)^1; p <- p / sum(p)
     d <- unique(data.frame(sample = sprintf("s%%05d", sample.int(%d, %d, TRUE)),
@@ -22,7 +22,10 @@ peak_extra_mb <- function(n_samples, n_taxa, n_draws) {
     d <- el_vegdist(x)
     cat("EXTRA_MB", (kb("VmHWM") - before) / 1024, "\\n")
   ', pkg, pkg, n_taxa, n_samples, n_draws, n_taxa, n_draws), script)
-  out <- suppressWarnings(system2(file.path(R.home("bin"), "Rscript"), script, stdout = TRUE, stderr = FALSE))
+  out <- suppressWarnings(system2(
+    file.path(R.home("bin"), "Rscript"), script, stdout = TRUE, stderr = FALSE,
+    env = paste0("R_LIBS=", paste(.libPaths(), collapse = ":"))
+  ))
   as.numeric(sub("EXTRA_MB ", "", grep("^EXTRA_MB", out, value = TRUE)))
 }
 
