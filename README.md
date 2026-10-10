@@ -4,7 +4,8 @@ Community ecology analyses on long tables.
 
 `ecolongr` computes distances, transformations and ordinations from a table with one row per sample and taxon, without the zeros.
 The taxa × samples matrix that `vegan` needs is never built.
-Results are tested against `vegan` and have `vegan`'s classes, so `vegan::metaMDS()`, `vegan::adonis2()`, `scores()` and `plot()` work on them.
+Results are tested against `vegan` and have `vegan`'s classes.
+`metaMDS()`, `adonis2()`, `betadisper()`, `hclust()` and `cmdscale()` give `vegan`'s results on a distance, and `scores()`, `summary()`, `plot()`, `biplot()`, `envfit()` and `procrustes()` work on an ordination.
 
 ## Why
 
@@ -63,7 +64,7 @@ pca <- counts |>
   el_decostand("rclr") |>
   el_rda(k = 5)
 
-vegan::eigenvals(pca) / pca$tot.chi
+summary(pca)
 plot(pca)
 vegan::scores(pca, display = "sites", choices = 1:2)
 ```
@@ -150,7 +151,8 @@ Conventions:
 - Rows with `quant == 0` are ignored.
 - A sample with no non-zero rows cannot be seen in the table.
   Pass `samples = ` with all sample IDs to include them as all-zero samples, as `vegan` does with a zero row.
-  Without it, the samples that occur in the table are used.
+  Without it, the samples that occur in the table are used, in sorted order.
+  Pass `samples = metadata$sample` to `el_vegdist()` and `el_rda()` before using `envfit()`, `adonis2()` or `procrustes()` with the metadata, which pair rows by position.
 - Bray–Curtis and Jaccard need non-negative quantities.
   Euclidean distance and `el_rda()` accept negative ones, for example after `rclr`.
 
@@ -170,7 +172,8 @@ The tests compare every function and option with `vegan` on `varespec` and a syn
 - **`log` follows `vegan` without the warning:** if any value is not a whole number, everything is first divided by the smallest positive value in the table.
 - **`el_rda()` returns the first `k` axes only.**
   `scores()`, `eigenvals()`, `plot()` and `screeplot()` work.
-  `predict()`, `anova()` and `fitted()` need the full matrix and do not.
+  `predict()` and `fitted()` need the full matrix and give an error.
+  `anova()` gives `vegan`'s table for an unconstrained ordination, which has no constrained component.
   Axis signs are arbitrary, as in `vegan`.
 - **`k` sets the number of axes (default 5).**
   A `k` above the rank, `min(number of samples − 1, number of taxa)`, is silently reduced to it, so a very large `k` returns all axes, as a full PCA.

@@ -71,7 +71,7 @@ el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "
                      rank = k, tot.chi = tot_chi),
            inertia = "variance",
            ecolongr = list(solver = "optspace", n = n, taxa = length(fit$taxa), k = k)),
-      class = c("rda", "cca")
+      class = c("ecolongr_rda", "rda", "cca")
     ))
   }
   if (transform == "clr") {
@@ -155,6 +155,13 @@ el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "
          CA = list(eig = eig, poseig = NULL, u = u, v = vv, rank = k, tot.chi = tot_chi),
          inertia = "variance",
          ecolongr = list(solver = solver, n = n, taxa = p, k = k)),
-    class = c("rda", "cca")
+    class = c("ecolongr_rda", "rda", "cca")
   )
+}
+
+#' @exportS3Method vegan::eigenvals
+eigenvals.ecolongr_rda <- function(x, ...) {
+  out <- NextMethod()
+  attr(out, "sumev") <- x$tot.chi
+  out
 }
