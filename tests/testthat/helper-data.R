@@ -142,7 +142,5 @@ double_centre <- function(m) {
 
 vegan_rclr_imputed <- function(m) {
   out <- as.matrix(suppressWarnings(vegan::decostand(m, "rclr", impute = TRUE)))
-  attr(out, "decostand") <- NULL
-  attr(out, "parameters") <- NULL
-  out
+  matrix(as.numeric(out), nrow(out), ncol(out), dimnames = dimnames(out))
 }

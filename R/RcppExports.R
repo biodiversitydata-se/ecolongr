@@ -9,3 +9,15 @@ finalize_dist <- function(acc, total, square, n, method, threads = 1L, ntaxa = 1
     invisible(.Call(`_ecolongr_finalize_dist`, acc, total, square, n, method, threads, ntaxa, nnz, shared))
 }
 
+cell_fitted <- function(XS, Y, i, j, threads = 1L) {
+    .Call(`_ecolongr_cell_fitted`, XS, Y, i, j, threads)
+}
+
+cell_multiply <- function(row, col, val, M, nrow_out, threads = 1L) {
+    .Call(`_ecolongr_cell_multiply`, row, col, val, M, nrow_out, threads)
+}
+
+cell_gram <- function(X, Y, i, j, threads = 1L) {
+    .Call(`_ecolongr_cell_gram`, X, Y, i, j, threads)
+}
+

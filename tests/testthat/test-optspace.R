@@ -38,7 +38,7 @@ test_that("a different rank, iteration count and tolerance match vegan::optspace
     ref <- vegan::optspace(as.matrix(r), ropt = cfg$r, niter = cfg$niter, tol = 1e-5)$M
     f <- optspace_triplets(t$i, t$j, t$v, t$n, t$p, r = cfg$r, niter = cfg$niter)
 
-    expect_equal(unname(double_centre(f$X %*% f$S %*% t(f$Y))), unname(ref), tolerance = 1e-6)
+    expect_equal(unname(double_centre(f$X %*% f$S %*% t(f$Y))), matrix(as.numeric(ref), nrow(ref)), tolerance = 1e-6)
   }
 })
 

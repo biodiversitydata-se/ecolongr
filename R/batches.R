@@ -23,7 +23,7 @@ open_taxon_stream <- function(x, binary = FALSE, memory_limit = "250MB", threads
 
   structure(
     list(con = con, files = c(path, spill), sorted = tempfile(fileext = ".parquet"),
-         value = if (binary) "1.0" else "quant"),
+         value = if (binary) "1.0" else "quant", keep = "quant <> 0"),
     class = "taxon_stream"
   )
 }
@@ -44,10 +44,10 @@ stream_summary <- function(stream) {
     negative = bad$negative,
     totals = DBI::dbGetQuery(stream$con, sprintf("
       SELECT CAST(sample AS VARCHAR) AS sample,
-             coalesce(sum(%1$s) FILTER (WHERE quant <> 0), 0) AS total,
-             coalesce(sum(%1$s * %1$s) FILTER (WHERE quant <> 0), 0) AS square,
-             CAST(count(*) FILTER (WHERE quant <> 0) AS DOUBLE) AS cells
-      FROM v GROUP BY sample", stream$value))
+             coalesce(sum(%1$s) FILTER (WHERE %2$s), 0) AS total,
+             coalesce(sum(%1$s * %1$s) FILTER (WHERE %2$s), 0) AS square,
+             CAST(count(*) FILTER (WHERE %2$s) AS DOUBLE) AS cells
+      FROM v GROUP BY sample", stream$value, stream$keep))
   )
 }
 
@@ -62,7 +62,7 @@ stream_batches <- function(stream, samples, batch_rows, fun) {
     unlink(stream$sorted)
     DBI::dbExecute(con, paste("COPY (SELECT * FROM (",
       sprintf("SELECT s.id AS sample, CAST(dense_rank() OVER (ORDER BY v.taxon) AS INTEGER) AS taxon, %s AS quant", stream$value),
-      "FROM v JOIN sample_ids s ON CAST(v.sample AS VARCHAR) = s.sample WHERE v.quant <> 0",
+      sprintf("FROM v JOIN sample_ids s ON CAST(v.sample AS VARCHAR) = s.sample WHERE %s", sub("quant", "v.quant", stream$keep, fixed = TRUE)),
       ") ORDER BY taxon) TO", DBI::dbQuoteString(con, stream$sorted), "(FORMAT PARQUET)"))
   }
   # Each DuckDB thread needs tens of MB; with a small limit, one thread still works.
@@ -113,9 +113,9 @@ for_each_taxon_batch <- function(x, batch_rows, fun, samples = NULL) {
 }
 
 stream_taxa <- function(stream) {
-  DBI::dbGetQuery(stream$con, "
+  DBI::dbGetQuery(stream$con, sprintf("
     SELECT CAST(taxon AS VARCHAR) AS name, CAST(dense_rank() OVER (ORDER BY taxon) AS INTEGER) AS id
-    FROM (SELECT DISTINCT taxon FROM v WHERE quant <> 0) ORDER BY id")$name
+    FROM (SELECT DISTINCT taxon FROM v WHERE %s) ORDER BY id", stream$keep))$name
 }
 
 # From here on `v` holds log(1 + x / pseudocount), the non-constant part of the clr:
@@ -129,4 +129,15 @@ stream_clr <- function(stream, pseudocount) {
     SELECT r.sample, r.taxon, ln(1.0 + r.quant / p.pc) AS quant
     FROM raw r JOIN clr_pseudocount p ON CAST(r.sample AS VARCHAR) = p.sample")
   invisible()
+}
+
+# From here on `v` holds the robust clr of the non-zero cells: log(x) minus the mean of log(x)
+# over the sample's non-zero cells. Cells whose value is exactly 0 are still observed.
+stream_rclr <- function(stream) {
+  DBI::dbExecute(stream$con, "
+    CREATE OR REPLACE VIEW v AS
+    SELECT sample, taxon, ln(quant) - avg(ln(quant)) OVER (PARTITION BY sample) AS quant
+    FROM raw WHERE quant > 0")
+  stream$keep <- "TRUE"
+  stream
 }

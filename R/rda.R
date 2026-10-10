@@ -14,7 +14,9 @@
 #'   inertia.
 #' @param transform `"none"` uses `x` as it is. `"clr"` takes raw counts and
 #'   centred log-ratio transforms them, with every zero cell read as
-#'   `log(pseudocount)`, without making the matrix dense.
+#'   `log(pseudocount)`, without making the matrix dense. `"rclr"` takes raw
+#'   counts, fills the zeros of the robust clr by rank-3 matrix completion as in
+#'   `vegan::decostand(x, "rclr")`, and returns at most three axes.
 #' @param pseudocount For `transform = "clr"` only: a positive number, `"inverse_depth"`
 #'   for `1 / (the sample's total count)`, or a positive numeric vector named by
 #'   sample. The unit is that of the counts.
@@ -26,14 +28,15 @@
 #'   full fitted matrix, such as `predict()` and `anova()`, do not work.
 #' @export
 el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "exact", "irlba"),
-                   transform = c("none", "clr"), pseudocount = 1,
+                   transform = c("none", "clr", "rclr"), pseudocount = 1,
                    sample = "sample", taxon = "taxon", quant = "quant") {
   call <- match.call()
   solver <- match.arg(solver)
   transform <- match.arg(transform)
-  if (transform == "none" && !missing(pseudocount)) {
+  if (transform != "clr" && !missing(pseudocount)) {
     stop("`pseudocount` is only used with `transform = \"clr\"`")
   }
+  if (transform == "rclr" && scale) stop("`scale = TRUE` is not available with `transform = \"rclr\"`")
   if (transform == "clr") check_pseudocount_form(pseudocount)
   if (!is.numeric(k) || length(k) != 1 || is.na(k) || k < 1 || k != round(k)) {
     stop("`k` must be a positive whole number")
@@ -48,6 +51,29 @@ el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "
 
   summary <- stream_summary(stream)
   if (summary$missing > 0) stop("`", quant, "` has missing values")
+  if (transform == "rclr") {
+    if (summary$negative > 0) stop("`", quant, "` has negative values")
+    fit <- rclr_completion(stream, summary, if (is.null(samples)) NULL else as.character(samples), resolve_threads(NULL))
+    n <- length(fit$samples)
+    k <- min(k, ncol(fit$core))
+    sv <- svd(fit$core)
+    u <- fit$Qa %*% sv$u[, seq_len(k), drop = FALSE]
+    vv <- fit$Qb %*% sv$v[, seq_len(k), drop = FALSE]
+    axes <- paste0("PC", seq_len(k))
+    dimnames(u) <- list(fit$samples, axes)
+    dimnames(vv) <- list(fit$taxa, axes)
+    tot_chi <- sum(sv$d^2) / (n - 1)
+    colsum <- stats::setNames(sqrt(rowSums((fit$Qb %*% t(fit$core))^2) / (n - 1)), fit$taxa)
+    return(structure(
+      list(colsum = colsum, tot.chi = tot_chi, Ybar = NULL, method = "rda", call = call,
+           pCCA = NULL, CCA = NULL,
+           CA = list(eig = stats::setNames(sv$d[seq_len(k)]^2 / (n - 1), axes), poseig = NULL, u = u, v = vv,
+                     rank = k, tot.chi = tot_chi),
+           inertia = "variance",
+           ecolongr = list(solver = "optspace", n = n, taxa = length(fit$taxa), k = k)),
+      class = c("rda", "cca")
+    ))
+  }
   if (transform == "clr") {
     if (summary$negative > 0) stop("`", quant, "` has negative values")
     stream_clr(stream, resolve_pseudocount(pseudocount, summary$totals))

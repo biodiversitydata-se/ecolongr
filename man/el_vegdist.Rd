@@ -6,7 +6,8 @@
 \usage{
 el_vegdist(
   x,
-  method = c("bray", "jaccard", "euclidean", "aitchison", "manhattan", "canberra"),
+  method = c("bray", "jaccard", "euclidean", "aitchison", "manhattan", "canberra",
+    "robust.aitchison"),
   binary = FALSE,
   pseudocount = 1,
   samples = NULL,
@@ -28,7 +29,10 @@ allowed only for \code{method = "euclidean"} without \code{binary}, for example 
 \item{method}{One of \code{"bray"}, \code{"jaccard"}, \code{"euclidean"}, \code{"aitchison"},
 \code{"manhattan"} and \code{"canberra"}, as in \code{\link[vegan:vegdist]{vegan::vegdist()}}. \code{"aitchison"} is
 the Euclidean distance between clr-transformed samples, computed from the
-counts. \code{"canberra"} is \code{NA}, as in \code{vegan}, between two all-zero samples.}
+counts. \code{"canberra"} is \code{NA}, as in \code{vegan}, between two all-zero samples.
+\code{"robust.aitchison"} is the Euclidean distance on the robust clr with the
+zeros filled by matrix completion (rank 3, as in \code{vegan}). It needs counts,
+and no all-zero samples.}
 
 \item{binary}{If \code{TRUE}, use presence and absence instead of quantities.}
 

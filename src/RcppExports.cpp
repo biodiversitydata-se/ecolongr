@@ -46,10 +46,59 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// cell_fitted
+NumericVector cell_fitted(NumericMatrix XS, NumericMatrix Y, IntegerVector i, IntegerVector j, int threads);
+RcppExport SEXP _ecolongr_cell_fitted(SEXP XSSEXP, SEXP YSEXP, SEXP iSEXP, SEXP jSEXP, SEXP threadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type XS(XSSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type i(iSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type j(jSEXP);
+    Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cell_fitted(XS, Y, i, j, threads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cell_multiply
+NumericMatrix cell_multiply(IntegerVector row, IntegerVector col, NumericVector val, NumericMatrix M, int nrow_out, int threads);
+RcppExport SEXP _ecolongr_cell_multiply(SEXP rowSEXP, SEXP colSEXP, SEXP valSEXP, SEXP MSEXP, SEXP nrow_outSEXP, SEXP threadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type col(colSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type val(valSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type M(MSEXP);
+    Rcpp::traits::input_parameter< int >::type nrow_out(nrow_outSEXP);
+    Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cell_multiply(row, col, val, M, nrow_out, threads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cell_gram
+NumericMatrix cell_gram(NumericMatrix X, NumericMatrix Y, IntegerVector i, IntegerVector j, int threads);
+RcppExport SEXP _ecolongr_cell_gram(SEXP XSEXP, SEXP YSEXP, SEXP iSEXP, SEXP jSEXP, SEXP threadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type X(XSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type i(iSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type j(jSEXP);
+    Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cell_gram(X, Y, i, j, threads));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ecolongr_accumulate_pairs", (DL_FUNC) &_ecolongr_accumulate_pairs, 9},
     {"_ecolongr_finalize_dist", (DL_FUNC) &_ecolongr_finalize_dist, 9},
+    {"_ecolongr_cell_fitted", (DL_FUNC) &_ecolongr_cell_fitted, 5},
+    {"_ecolongr_cell_multiply", (DL_FUNC) &_ecolongr_cell_multiply, 6},
+    {"_ecolongr_cell_gram", (DL_FUNC) &_ecolongr_cell_gram, 5},
     {NULL, NULL, 0}
 };
 
