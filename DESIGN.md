@@ -250,14 +250,30 @@ Checked on 2026-10-10: `log`, `log10`, `abs`, `round`, `as.integer`, arithmetic 
 
 ### `rda`, unconstrained
 
-- Truncated SVD of the centred (and optionally scaled) matrix, with the centring applied implicitly so the matrix is never densified (`irlba`, `RSpectra`).
+Implemented as `el_rda()`.
+
+- Truncated SVD of the centred (and optionally scaled) matrix, with the centring applied implicitly so the matrix is never densified.
+  Small tables use a dense SVD (`solver = "exact"`), larger ones `irlba::irlba()` on a sparse matrix built from the non-zero rows.
 - Total inertia is computed without densifying: `Σ x² − n · mean²` per column.
   This gives the proportion explained per axis.
 - *n* is the number of samples in the full set.
   All-zero samples listed in `samples` count in *n*, the column means and the total inertia, as zero rows do in `vegan`.
 - Only the first *k* axes are returned, where `vegan` returns all.
-- To match: eigenvalues, site scores, species scores and `scaling` 1, 2 and 3.
+- The result has class `rda` and `cca`, so `scores()` (scalings 1, 2 and 3), `eigenvals()`, `plot()` and `screeplot()` work.
+  `predict()`, `anova()` and `fitted()` need the full matrix and do not.
 - Axis signs are arbitrary.
+- Input is a transformed long table, composed with `el_decostand()`; `clr` with a pseudocount is not implemented.
+  It fills the matrix, but only with one constant per sample, so it is a sparse matrix plus a rank-1 term and fits the implicit method.
+
+Measured on sequoia, 5 axes, with 12 or fewer threads for the sort and `irlba` single-threaded:
+
+| table | untransformed | `rclr` |
+|---|---|---|
+| 5,000 samples, 300,000 taxa, 11.1M rows | 35 s, 1.4 GB | 27 s, 3.0 GB |
+| 20,000 samples, 499,000 taxa, 19.4M rows | 63 s, 2.2 GB | 54 s, 3.8 GB |
+
+A dense matrix for the second table would be about 80 GB.
+The higher peak with `rclr` is the lazy window step in the `duckplyr` connection (see above).
 
 ## Testing against vegan
 
@@ -293,7 +309,6 @@ If one of them already computes a measure correctly on sparse input, a thin wrap
 - Which lazy-table classes to accept: `duckplyr_df` and `duckdb_tibble` only, or also `tbl_lazy` from `dbplyr`, Arrow datasets and plain data frames.
 - Whether to depend on `vegan`.
   It is needed for tests, and for returning compatible objects (`vegan::rda` class) if we choose to.
-- Whether `rda` should return an object of class `rda`, so that `vegan`'s `scores`, `plot` and `summary` work.
 - Whether omitting `samples` should only be documented, or also give a message that all-zero samples cannot be detected.
 - Whether to implement the matrix completion behind `impute = TRUE` (for `el_rda()` on `rclr` and for a true robust Aitchison distance), or keep absent cells as 0 and only document the difference.
 - Which indices beyond Bray–Curtis, Jaccard and Euclidean are worth the effort.
