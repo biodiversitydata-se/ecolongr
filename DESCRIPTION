@@ -21,6 +21,7 @@ Imports:
 Suggests:
     pkgload,
     testthat (>= 3.0.0),
-    vegan
+    vegan,
+    withr
 Config/roxygen2/version: 8.1.1
 LinkingTo: Rcpp

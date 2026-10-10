@@ -62,3 +62,59 @@ test_that("a taxon in a single sample adds nothing", {
 
   expect_equal(acc, c(0, 0, 0))
 })
+
+shuffled_within_taxon <- function(d, seed = 3) {
+  set.seed(seed)
+  d[order(d$taxon, runif(nrow(d))), ]
+}
+
+test_that("accumulate_pairs does not need the samples sorted within a taxon", {
+  d <- shuffled_within_taxon(pairs_table())
+  expect_false(identical(d$sample, pairs_table()$sample))
+
+  for (product in c(FALSE, TRUE)) {
+    acc <- numeric(10)
+    accumulate_pairs(acc, d$sample, d$taxon, d$quant, 5L, product = product)
+    expect_equal(acc, naive_pairs(d$sample, d$taxon, d$quant, 5L, product = product))
+  }
+})
+
+random_community <- function(n_samples = 60L, n_taxa = 300L, seed = 11) {
+  set.seed(seed)
+  d <- unique(data.frame(
+    sample = sample.int(n_samples, 1500, TRUE) - 1L,
+    taxon = sort(sample.int(n_taxa, 1500, TRUE))
+  ))
+  d$quant <- rpois(nrow(d), 5) + 1
+  shuffled_within_taxon(d)
+}
+
+test_that("accumulate_pairs gives identical results for any number of threads", {
+  d <- random_community()
+  n <- 60L
+  reference <- numeric(n * (n - 1) / 2)
+  accumulate_pairs(reference, d$sample, d$taxon, d$quant, n, product = FALSE, threads = 1L)
+
+  expect_gt(sum(reference), 0)
+  for (threads in c(2L, 3L, 7L, 64L)) {
+    acc <- numeric(n * (n - 1) / 2)
+    accumulate_pairs(acc, d$sample, d$taxon, d$quant, n, product = FALSE, threads = threads)
+    expect_identical(acc, reference)
+  }
+})
+
+test_that("accumulate_pairs with threads matches the reference loop", {
+  d <- random_community(n_samples = 30L, n_taxa = 80L, seed = 5)
+  acc <- numeric(30 * 29 / 2)
+  accumulate_pairs(acc, d$sample, d$taxon, d$quant, 30L, product = TRUE, threads = 4L)
+
+  expect_equal(acc, naive_pairs(d$sample, d$taxon, d$quant, 30L, product = TRUE))
+})
+
+test_that("accumulate_pairs with more threads than samples still works", {
+  d <- pairs_table()
+  acc <- numeric(10)
+  accumulate_pairs(acc, d$sample, d$taxon, d$quant, 5L, product = FALSE, threads = 16L)
+
+  expect_equal(acc, naive_pairs(d$sample, d$taxon, d$quant, 5L))
+})
