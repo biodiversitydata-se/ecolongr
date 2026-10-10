@@ -245,6 +245,8 @@ Implemented as `el_decostand()`; the result is a lazy `duckplyr` table and the t
   The completed matrix has rank 3: after centring it is `Xc S Yc'`, so distances come from the 3-column factors via a QR of `Yc`, and the PCA from an SVD of a 3 × 3 core.
   `el_rda` therefore returns at most three axes, `scale = TRUE` is not available, and samples with no non-zero cell are rejected (they have nothing to complete from).
   On the full LMO series (414 samples, 60,633 ASVs) it takes under two seconds, against 80 seconds for `vegan`'s dense completion, with the same seasonal R² (0.303).
+  Measured on sequoia: 5,000 samples and 11.1M cells, `robust.aitchison` 38 s and 1.4 GB, `el_rda` 37 s and 1.7 GB; 20,000 samples and 19.4M cells, 87 s and 2.3 GB, and 72 s and 2.8 GB.
+  The 20,000-sample run found an integer overflow in `p * n` (about 1e10), now fixed and covered by a test.
 - `check = TRUE` (default) runs one query to stop on negative or missing quantities; `check = FALSE` is fully lazy.
 
 `clr` with a pseudocount has no long-table form, because it makes every cell non-zero.
