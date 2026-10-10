@@ -140,3 +140,49 @@ test_that("bad input is an error", {
   constant <- data.frame(sample = rep(c("a", "b", "c"), 2), taxon = rep(c("t1", "t2"), each = 3), quant = 1)
   expect_error(el_rda(constant, scale = TRUE), "constant")
 })
+
+unexplained <- function(x) 1 - sum(unname(vegan::eigenvals(x))) / x$tot.chi
+
+test_that("the unexplained variance with k below the rank equals vegan's, for none, clr and scale = TRUE", {
+  m <- present_taxa(fixtures$synthetic)
+  clr <- vegan::decostand(m, "clr", pseudocount = 1)
+  cases <- list(
+    list(got = el_rda(long_table(m), k = 3, solver = "exact"), ref = vegan::rda(m)),
+    list(got = el_rda(long_table(m), k = 3, transform = "clr", pseudocount = 1, solver = "exact"), ref = vegan::rda(clr)),
+    list(got = el_rda(long_table(m), k = 3, scale = TRUE, solver = "exact"), ref = vegan::rda(m, scale = TRUE))
+  )
+
+  for (case in cases) {
+    ref_unexplained <- 1 - sum(vegan::eigenvals(case$ref)[1:3]) / case$ref$tot.chi
+    expect_gt(ref_unexplained, 0.01)
+    expect_equal(unexplained(case$got), ref_unexplained, tolerance = 1e-8)
+  }
+})
+
+test_that("total inertia does not depend on k or on the solver, so only the unexplained share changes", {
+  m <- present_taxa(big_sparse_community())
+  few <- el_rda(long_table(m), k = 2, solver = "irlba")
+  more <- el_rda(long_table(m), k = 8, solver = "irlba")
+  exact <- el_rda(long_table(m), k = 8, solver = "exact")
+
+  expect_equal(few$tot.chi, more$tot.chi)
+  expect_equal(more$tot.chi, exact$tot.chi, tolerance = 1e-10)
+  expect_equal(unexplained(more), unexplained(exact), tolerance = 1e-6)
+  expect_lt(unexplained(more), unexplained(few))
+  expect_equal(unexplained(few), 1 - sum(vegan::eigenvals(vegan::rda(m))[1:2]) / vegan::rda(m)$tot.chi, tolerance = 1e-6)
+})
+
+test_that("all axes explain everything: the unexplained share is zero at k = rank", {
+  m <- fixtures$synthetic[1:6, ]
+  got <- el_rda(long_table(m), k = 1000, solver = "exact")
+
+  expect_equal(length(vegan::eigenvals(got)), 5)
+  expect_equal(unexplained(got), 0, tolerance = 1e-10)
+})
+
+test_that("the three axes of the completed rclr explain all of its inertia", {
+  m <- fixtures$varespec
+  got <- el_rda(long_table(m), k = 3, transform = "rclr")
+
+  expect_equal(unexplained(got), 0, tolerance = 1e-10)
+})

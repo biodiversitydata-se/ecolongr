@@ -172,6 +172,15 @@ The tests compare every function and option with `vegan` on `varespec` and a syn
   `scores()`, `eigenvals()`, `plot()` and `screeplot()` work.
   `predict()`, `anova()` and `fitted()` need the full matrix and do not.
   Axis signs are arbitrary, as in `vegan`.
+- **`k` sets the number of axes (default 5).**
+  A `k` above the rank, `min(number of samples − 1, number of taxa)`, is silently reduced to it, so a very large `k` returns all axes, as a full PCA.
+  A `k` close to the rank makes `el_rda()` use the exact solver, which builds the dense samples × taxa matrix.
+  Keep `k` small on large tables, where the iterative solver is used.
+  With `transform = "rclr"` there are at most three axes.
+- **The variance the `k` axes leave out is available.**
+  `pca$tot.chi` is the total variance of the whole table, whatever `k` is, so `1 - sum(vegan::eigenvals(pca)) / pca$tot.chi` is the unexplained share.
+  Only that sum is known: the eigenvalues of the axes beyond `k` are not.
+  For `transform = "rclr"` the share is 0, because the completed matrix has rank 3.
 - **`hellinger` writes a temporary Parquet file**, because `duckplyr` cannot compute a square root.
   The file is removed when the R session ends.
 
