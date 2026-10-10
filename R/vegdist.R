@@ -18,7 +18,7 @@ el_vegdist <- function(x, method = "bray", samples = NULL,
                        sample = "sample", taxon = "taxon", quant = "quant") {
   method <- match.arg(method, "bray")
 
-  x <- duckplyr::as_duckdb_tibble(x)
+  x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   x <- dplyr::select(x, sample = dplyr::all_of(sample), taxon = dplyr::all_of(taxon),
                      quant = dplyr::all_of(quant))
 
