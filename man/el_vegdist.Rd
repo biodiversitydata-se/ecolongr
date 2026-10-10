@@ -2,11 +2,12 @@
 % Please edit documentation in R/vegdist.R
 \name{el_vegdist}
 \alias{el_vegdist}
-\title{Bray-Curtis dissimilarity from a long table}
+\title{Dissimilarity from a long table}
 \usage{
 el_vegdist(
   x,
-  method = "bray",
+  method = c("bray", "jaccard", "euclidean"),
+  binary = FALSE,
   samples = NULL,
   sample = "sample",
   taxon = "taxon",
@@ -15,13 +16,17 @@ el_vegdist(
 }
 \arguments{
 \item{x}{A data frame or lazy \code{duckplyr} table with one row per non-zero
-sample and taxon.}
+sample and taxon. Rows with \code{quant == 0} are ignored.}
 
-\item{method}{Only \code{"bray"} is implemented.}
+\item{method}{One of \code{"bray"}, \code{"jaccard"} and \code{"euclidean"}, as in
+\code{\link[vegan:vegdist]{vegan::vegdist()}}.}
 
-\item{samples}{Optional vector of all sample IDs. Samples in \code{samples} that
-are absent from \code{x} are treated as all zero.
-Without it, the samples that occur in \code{x} are used.}
+\item{binary}{If \code{TRUE}, use presence and absence instead of quantities.}
+
+\item{samples}{Optional vector of all sample IDs, which also sets the order
+of the result. Samples in \code{samples} that are absent from \code{x} are treated as
+all zero. Without it, the samples that occur in \code{x} are used, in
+alphabetical order.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}.}
 }
