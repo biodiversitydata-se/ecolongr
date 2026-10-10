@@ -7,7 +7,10 @@
 #' (one number per pair of samples) plus one batch.
 #'
 #' @param x A data frame or lazy `duckplyr` table with one row per non-zero
-#'   sample and taxon. Rows with `quant == 0` are ignored.
+#'   sample and taxon. Rows with `quant == 0` are ignored, but a sample that
+#'   has only such rows is kept as an all-zero sample. Negative values are
+#'   allowed only for `method = "euclidean"` without `binary`, for example after
+#'   `el_decostand(method = "rclr")`.
 #' @param method One of `"bray"`, `"jaccard"` and `"euclidean"`, as in
 #'   [vegan::vegdist()].
 #' @param binary If `TRUE`, use presence and absence instead of quantities.
@@ -55,7 +58,7 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = F
 
   summary <- stream_summary(stream)
   if (summary$missing > 0) stop("`", quant, "` has missing values")
-  if (summary$negative > 0) stop("`", quant, "` has negative values")
+  if (summary$negative > 0 && (method != "euclidean" || binary)) stop("`", quant, "` has negative values")
 
   totals <- summary$totals
   totals$sample <- as.character(totals$sample)

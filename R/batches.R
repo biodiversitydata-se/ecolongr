@@ -42,8 +42,10 @@ stream_summary <- function(stream) {
     missing = bad$missing,
     negative = bad$negative,
     totals = DBI::dbGetQuery(stream$con, sprintf("
-      SELECT CAST(sample AS VARCHAR) AS sample, sum(%1$s) AS total, sum(%1$s * %1$s) AS square
-      FROM v WHERE quant > 0 GROUP BY sample", stream$value))
+      SELECT CAST(sample AS VARCHAR) AS sample,
+             coalesce(sum(%1$s) FILTER (WHERE quant <> 0), 0) AS total,
+             coalesce(sum(%1$s * %1$s) FILTER (WHERE quant <> 0), 0) AS square
+      FROM v GROUP BY sample", stream$value))
   )
 }
 
@@ -58,7 +60,7 @@ stream_batches <- function(stream, samples, batch_rows, fun) {
     unlink(stream$sorted)
     DBI::dbExecute(con, paste("COPY (SELECT * FROM (",
       sprintf("SELECT s.id AS sample, CAST(dense_rank() OVER (ORDER BY v.taxon) AS INTEGER) AS taxon, %s AS quant", stream$value),
-      "FROM v JOIN sample_ids s ON CAST(v.sample AS VARCHAR) = s.sample WHERE v.quant > 0",
+      "FROM v JOIN sample_ids s ON CAST(v.sample AS VARCHAR) = s.sample WHERE v.quant <> 0",
       ") ORDER BY taxon) TO", DBI::dbQuoteString(con, stream$sorted), "(FORMAT PARQUET)"))
   }
   # Each DuckDB thread needs tens of MB; with a small limit, one thread still works.

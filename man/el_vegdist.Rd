@@ -19,7 +19,10 @@ el_vegdist(
 }
 \arguments{
 \item{x}{A data frame or lazy \code{duckplyr} table with one row per non-zero
-sample and taxon. Rows with \code{quant == 0} are ignored.}
+sample and taxon. Rows with \code{quant == 0} are ignored, but a sample that
+has only such rows is kept as an all-zero sample. Negative values are
+allowed only for \code{method = "euclidean"} without \code{binary}, for example after
+\code{el_decostand(method = "rclr")}.}
 
 \item{method}{One of \code{"bray"}, \code{"jaccard"} and \code{"euclidean"}, as in
 \code{\link[vegan:vegdist]{vegan::vegdist()}}.}

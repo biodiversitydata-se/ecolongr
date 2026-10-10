@@ -161,3 +161,18 @@ test_that("rclr then euclidean treats absent cells as 0 when there are zeros", {
     expect_equal(as_full_matrix(got), as_full_matrix(vegan::vegdist(rclr, "euclidean")), tolerance = 1e-10)
   }
 })
+
+test_that("a sample that appears only with zero rows is kept as an all-zero sample", {
+  m <- synthetic_community()[1:4, ]
+  x <- rbind(long_table(m), data.frame(sample = "zero", taxon = c("t01", "t02"), quant = 0))
+  with_row <- rbind(m, zero = 0)
+
+  for (method in c("bray", "jaccard", "euclidean")) {
+    got <- el_vegdist(x, method = method)
+    expect_equal(
+      as_full_matrix(got),
+      as_full_matrix(suppressWarnings(vegan::vegdist(with_row, method))),
+      tolerance = 1e-10
+    )
+  }
+})
