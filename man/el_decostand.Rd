@@ -46,6 +46,18 @@ not a whole number, all values are first divided by the smallest positive
 value of the table, without a warning.
 \item \code{"rclr"}: \code{log(x)} minus the mean of \code{log(x)} over the sample's rows. This
 is \code{vegan}'s \code{"rclr"} with \code{impute = FALSE}; zeros stay absent where
-\code{vegan} returns \code{NA}.
+\code{vegan} returns \code{NA}. See the section on zeros below.
 }
 }
+\section{Zeros and \code{rclr}}{
+
+\code{vegan}'s default, \code{decostand(x, "rclr")}, fills the missing cells by matrix
+completion and then centres rows and columns, which is a global step that
+changes the non-zero cells too. \code{el_decostand()} does not: zero cells stay
+absent, and a later step that reads absent cells as 0 (such as
+\code{el_vegdist(method = "euclidean")}) puts those taxa at the sample's
+geometric mean. The result is therefore not \code{vegan}'s
+\code{vegdist(method = "robust.aitchison")} when the table has zeros; the two
+agree when it has none.
+}
+

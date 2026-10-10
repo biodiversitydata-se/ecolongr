@@ -14,7 +14,7 @@ utils::globalVariables(c("sample", "quant", "minpos", "fractional"))
 #'   value of the table, without a warning.
 #' * `"rclr"`: `log(x)` minus the mean of `log(x)` over the sample's rows. This
 #'   is `vegan`'s `"rclr"` with `impute = FALSE`; zeros stay absent where
-#'   `vegan` returns `NA`.
+#'   `vegan` returns `NA`. See the section on zeros below.
 #'
 #' @param x A data frame or lazy `duckplyr` table with one row per non-zero
 #'   sample and taxon. Rows with `quant == 0` are dropped.
@@ -24,6 +24,16 @@ utils::globalVariables(c("sample", "quant", "minpos", "fractional"))
 #'   quantities. Use `FALSE` to stay entirely lazy.
 #' @param sample,taxon,quant Names of the columns in `x`. The result has only
 #'   these three columns, with the same names.
+#' @section Zeros and `rclr`:
+#' `vegan`'s default, `decostand(x, "rclr")`, fills the missing cells by matrix
+#' completion and then centres rows and columns, which is a global step that
+#' changes the non-zero cells too. `el_decostand()` does not: zero cells stay
+#' absent, and a later step that reads absent cells as 0 (such as
+#' `el_vegdist(method = "euclidean")`) puts those taxa at the sample's
+#' geometric mean. The result is therefore not `vegan`'s
+#' `vegdist(method = "robust.aitchison")` when the table has zeros; the two
+#' agree when it has none.
+#'
 #' @return A lazy `duckplyr` table.
 #' @export
 el_decostand <- function(x, method = c("total", "hellinger", "log", "pa", "rclr"),

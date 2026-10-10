@@ -57,3 +57,9 @@ taxon. A compiled kernel then reads it in batches and adds up the shared
 quantities for every pair of samples, so the memory used is the result
 (one number per pair of samples) plus one batch.
 }
+\details{
+Euclidean distance on \code{el_decostand(method = "rclr")} output reads absent
+cells as 0. That is not \code{vegan}'s \code{"robust.aitchison"} when the table has
+zeros, because \code{vegan} first fills them by matrix completion; see
+\code{\link[=el_decostand]{el_decostand()}}.
+}

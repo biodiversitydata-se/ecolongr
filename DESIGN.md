@@ -233,6 +233,14 @@ Implemented as `el_decostand()`; the result is a lazy `duckplyr` table and the t
   `vegan` 2.7-6 returns `NA` for zeros with `impute = FALSE`, and the non-zero cells equal `log(x) - mean(log(x[x > 0]))` exactly.
   Called without `impute`, it fills the zeros by matrix completion, so the reference call must pass `impute = FALSE`.
   In a long table the zeros are simply absent rows.
+- `rclr` is not `vegan`'s robust Aitchison distance when zeros are present.
+  `vegdist(method = "robust.aitchison")` is the Euclidean distance on `decostand(x, "rclr")` with the default `impute = TRUE` (Martino et al. 2019).
+  That step fills the missing cells by matrix completion (OptSpace, rank 3, 5 iterations) and then centres rows and columns to mean 0.
+  Filled values are estimates from all samples and taxa, and the centring changes the non-zero cells too, so the transform is global and cannot be a lazy within-sample query.
+  `el_vegdist(el_decostand(x, "rclr"), "euclidean")` instead treats an absent cell as 0, which puts the taxon at the sample's geometric mean.
+  The two agree when the table has no zeros (tested).
+  On the synthetic test table (80% zeros) they differ by up to 4.4 where the distances range up to 3.4.
+  There is no `vegan` oracle for the zero convention used here.
 - `check = TRUE` (default) runs one query to stop on negative or missing quantities; `check = FALSE` is fully lazy.
 
 Not planned: `clr` with a pseudocount, which fills the matrix.
@@ -287,4 +295,5 @@ If one of them already computes a measure correctly on sparse input, a thin wrap
   It is needed for tests, and for returning compatible objects (`vegan::rda` class) if we choose to.
 - Whether `rda` should return an object of class `rda`, so that `vegan`'s `scores`, `plot` and `summary` work.
 - Whether omitting `samples` should only be documented, or also give a message that all-zero samples cannot be detected.
+- Whether to implement the matrix completion behind `impute = TRUE` (for `el_rda()` on `rclr` and for a true robust Aitchison distance), or keep absent cells as 0 and only document the difference.
 - Which indices beyond Bray–Curtis, Jaccard and Euclidean are worth the effort.

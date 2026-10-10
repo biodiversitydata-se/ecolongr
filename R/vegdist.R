@@ -18,6 +18,12 @@
 #'   of the result. Samples in `samples` that are absent from `x` are treated as
 #'   all zero. Without it, the samples that occur in `x` are used, in
 #'   alphabetical order.
+#' @details
+#' Euclidean distance on `el_decostand(method = "rclr")` output reads absent
+#' cells as 0. That is not `vegan`'s `"robust.aitchison"` when the table has
+#' zeros, because `vegan` first fills them by matrix completion; see
+#' [el_decostand()].
+#'
 #' @param batch_rows Approximate number of table rows held in R at a time.
 #'   A batch always holds whole taxa.
 #' @param threads Number of threads for the pair kernel. Defaults to the option
