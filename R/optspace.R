@@ -18,7 +18,7 @@ optspace_gp <- function(x, m0, r) {
 
 optspace_triplets <- function(i, j, v, n, p, r = 3, niter = 5, tol = 1e-5, threads = 1L) {
   nnz <- length(v)
-  eps <- nnz / sqrt(p * n)
+  eps <- nnz / sqrt(as.numeric(p) * as.numeric(n))
   rho <- eps * n
   rescale <- sqrt(nnz * r / sum(v^2))
   v <- v * rescale

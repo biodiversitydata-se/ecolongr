@@ -127,3 +127,24 @@ test_that("rclr with imputation recovers the seasonal structure of the LMO subse
 
   expect_equal(seasonal_r2(got), seasonal_r2(reference), tolerance = 1e-5)
 })
+
+test_that("dimensions whose product exceeds the 32-bit integer range do not overflow", {
+  set.seed(12)
+  n <- 50000L
+  p <- 50000L
+  expect_gt(as.numeric(n) * p, .Machine$integer.max)
+  i <- rep(seq_len(n) - 1L, each = 6)
+  j <- sample.int(p, length(i), replace = TRUE) - 1L
+  keep <- !duplicated(cbind(i, j))
+  i <- i[keep]
+  j <- j[keep]
+  x <- matrix(rnorm(n * 2), n, 2)
+  y <- matrix(rnorm(p * 2), p, 2)
+  v <- rowSums(x[i + 1L, ] * y[j + 1L, ]) + rnorm(length(i), sd = 0.1)
+
+  fit <- optspace_triplets(i, j, v, n, p)
+
+  expect_true(all(is.finite(fit$X)))
+  expect_true(all(is.finite(fit$Y)))
+  expect_true(all(is.finite(fit$S)))
+})
