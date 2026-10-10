@@ -9,7 +9,8 @@ el_vegdist(
   method = c("bray", "jaccard", "euclidean"),
   binary = FALSE,
   samples = NULL,
-  batch_rows = 5e+06,
+  batch_rows = 1e+06,
+  threads = NULL,
   sample = "sample",
   taxon = "taxon",
   quant = "quant"
@@ -31,6 +32,9 @@ alphabetical order.}
 
 \item{batch_rows}{Approximate number of table rows held in R at a time.
 A batch always holds whole taxa.}
+
+\item{threads}{Number of threads for the pair kernel. Defaults to the option
+\code{ecolongr.threads}, or half of the cores. The result does not depend on it.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}.}
 }

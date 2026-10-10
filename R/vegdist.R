@@ -17,16 +17,24 @@
 #'   alphabetical order.
 #' @param batch_rows Approximate number of table rows held in R at a time.
 #'   A batch always holds whole taxa.
+#' @param threads Number of threads for the pair kernel. Defaults to the option
+#'   `ecolongr.threads`, or half of the cores. The result does not depend on it.
 #' @param sample,taxon,quant Names of the columns in `x`.
 #' @return A `dist` object.
 #' @export
 el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = FALSE,
-                       samples = NULL, batch_rows = 5e6,
+                       samples = NULL, batch_rows = 1e6, threads = NULL,
                        sample = "sample", taxon = "taxon", quant = "quant") {
   method <- match.arg(method)
   if (!is.numeric(batch_rows) || length(batch_rows) != 1 || is.na(batch_rows) || batch_rows < 1) {
     stop("`batch_rows` must be a positive number")
   }
+
+  if (is.null(threads)) threads <- getOption("ecolongr.threads", max(1L, parallel::detectCores() %/% 2L))
+  if (!is.numeric(threads) || length(threads) != 1 || is.na(threads) || threads < 1 || threads != round(threads)) {
+    stop("`threads` must be a positive whole number")
+  }
+  threads <- as.integer(threads)
 
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   x <- dplyr::select(x, sample = dplyr::all_of(sample), taxon = dplyr::all_of(taxon),
@@ -62,9 +70,9 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = F
   stream_batches(stream, batch_rows, function(rows) {
     taxon_id <- cumsum(c(TRUE, rows$taxon[-1] != rows$taxon[-nrow(rows)]))
     accumulate_pairs(acc, match(rows$sample, samples) - 1L, as.integer(taxon_id),
-                     rows$quant, n, product)
+                     rows$quant, n, product, threads = threads)
   })
-  finalize_dist(acc, total, square, n, match(method, c("bray", "jaccard", "euclidean")) - 1L)
+  finalize_dist(acc, total, square, n, match(method, c("bray", "jaccard", "euclidean")) - 1L, threads = threads)
 
   structure(acc, Size = n, Labels = samples, Diag = FALSE, Upper = FALSE,
             method = method, class = "dist")
