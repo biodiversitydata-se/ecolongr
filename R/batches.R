@@ -17,8 +17,9 @@ open_taxon_stream <- function(x, binary = FALSE, memory_limit = "250MB", threads
   DBI::dbExecute(con, paste("SET temp_directory =", DBI::dbQuoteString(con, spill)))
   DBI::dbExecute(con, "SET preserve_insertion_order = false")
   DBI::dbExecute(con, paste(
-    "CREATE VIEW v AS SELECT sample, taxon, quant FROM read_parquet(", DBI::dbQuoteString(con, path), ")"
+    "CREATE VIEW raw AS SELECT sample, taxon, CAST(quant AS DOUBLE) AS quant FROM read_parquet(", DBI::dbQuoteString(con, path), ")"
   ))
+  DBI::dbExecute(con, "CREATE VIEW v AS SELECT * FROM raw")
 
   structure(
     list(con = con, files = c(path, spill), sorted = tempfile(fileext = ".parquet"),
@@ -114,4 +115,17 @@ stream_taxa <- function(stream) {
   DBI::dbGetQuery(stream$con, "
     SELECT CAST(taxon AS VARCHAR) AS name, CAST(dense_rank() OVER (ORDER BY taxon) AS INTEGER) AS id
     FROM (SELECT DISTINCT taxon FROM v WHERE quant <> 0) ORDER BY id")$name
+}
+
+# From here on `v` holds log(1 + x / pseudocount), the non-constant part of the clr:
+# a clr row is that value minus its row mean, and a zero cell has the value 0.
+stream_clr <- function(stream, pseudocount) {
+  duckdb::duckdb_register(stream$con, "clr_pseudocount", data.frame(
+    sample = names(pseudocount), pc = as.numeric(pseudocount)
+  ))
+  DBI::dbExecute(stream$con, "
+    CREATE OR REPLACE VIEW v AS
+    SELECT r.sample, r.taxon, ln(1.0 + r.quant / p.pc) AS quant
+    FROM raw r JOIN clr_pseudocount p ON CAST(r.sample AS VARCHAR) = p.sample")
+  invisible()
 }

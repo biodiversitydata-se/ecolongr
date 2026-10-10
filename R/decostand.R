@@ -39,6 +39,10 @@ utils::globalVariables(c("sample", "quant", "minpos", "fractional"))
 el_decostand <- function(x, method = c("total", "hellinger", "log", "pa", "rclr"),
                          logbase = 2, check = TRUE,
                          sample = "sample", taxon = "taxon", quant = "quant") {
+  if (identical(method, "clr")) {
+    stop("`clr` makes every cell non-zero, so it has no long-table form; use ",
+         "el_vegdist(method = \"aitchison\") or el_rda(transform = \"clr\")", call. = FALSE)
+  }
   method <- match.arg(method)
   if (method == "log" && (!is.numeric(logbase) || length(logbase) != 1 || is.na(logbase) || logbase <= 1)) {
     stop("`logbase` must be a number greater than 1")

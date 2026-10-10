@@ -19,6 +19,7 @@ Imports:
     dplyr,
     duckplyr,
     irlba,
+    methods,
     parallel,
     utils
 Suggests:

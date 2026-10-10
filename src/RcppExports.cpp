@@ -27,8 +27,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // finalize_dist
-void finalize_dist(NumericVector acc, NumericVector total, NumericVector square, int n, int method, int threads);
-RcppExport SEXP _ecolongr_finalize_dist(SEXP accSEXP, SEXP totalSEXP, SEXP squareSEXP, SEXP nSEXP, SEXP methodSEXP, SEXP threadsSEXP) {
+void finalize_dist(NumericVector acc, NumericVector total, NumericVector square, int n, int method, int threads, double ntaxa);
+RcppExport SEXP _ecolongr_finalize_dist(SEXP accSEXP, SEXP totalSEXP, SEXP squareSEXP, SEXP nSEXP, SEXP methodSEXP, SEXP threadsSEXP, SEXP ntaxaSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type acc(accSEXP);
@@ -37,14 +37,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
     Rcpp::traits::input_parameter< int >::type method(methodSEXP);
     Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
-    finalize_dist(acc, total, square, n, method, threads);
+    Rcpp::traits::input_parameter< double >::type ntaxa(ntaxaSEXP);
+    finalize_dist(acc, total, square, n, method, threads, ntaxa);
     return R_NilValue;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ecolongr_accumulate_pairs", (DL_FUNC) &_ecolongr_accumulate_pairs, 7},
-    {"_ecolongr_finalize_dist", (DL_FUNC) &_ecolongr_finalize_dist, 6},
+    {"_ecolongr_finalize_dist", (DL_FUNC) &_ecolongr_finalize_dist, 7},
     {NULL, NULL, 0}
 };
 

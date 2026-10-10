@@ -99,19 +99,22 @@ void accumulate_pairs(NumericVector acc, IntegerVector sample, IntegerVector tax
   }
 }
 
-// method: 0 = bray, 1 = jaccard, 2 = euclidean. acc holds the shared minima
-// (or products for euclidean) and is replaced by the distances.
+// method: 0 = bray, 1 = jaccard, 2 = euclidean, 3 = aitchison. acc holds the shared minima
+// (or products for euclidean and aitchison) and is replaced by the distances.
+// For aitchison, total holds the row sums of the non-constant part of the clr and ntaxa
+// the number of taxa: the clr is that part minus its row mean.
 // [[Rcpp::export]]
 void finalize_dist(NumericVector acc, NumericVector total, NumericVector square,
-                   int n, int method, int threads = 1) {
+                   int n, int method, int threads = 1, double ntaxa = 1) {
   if (acc.size() != (R_xlen_t) n * (n - 1) / 2) stop("`acc` must have n * (n - 1) / 2 elements");
   double* out = acc.begin();
   #pragma omp parallel for schedule(dynamic, 16) num_threads(threads)
   for (int i = 0; i < n - 1; ++i) {
     R_xlen_t k = (R_xlen_t) i * (2 * (R_xlen_t) n - i - 1) / 2;
     for (int j = i + 1; j < n; ++j, ++k) {
-      if (method == 2) {
-        const double d2 = square[i] + square[j] - 2 * out[k];
+      if (method == 2 || method == 3) {
+        double d2 = square[i] + square[j] - 2 * out[k];
+        if (method == 3) d2 -= (total[i] - total[j]) * (total[i] - total[j]) / ntaxa;
         out[k] = d2 > 0 ? std::sqrt(d2) : 0.0;
       } else {
         const double b = 1 - 2 * out[k] / (total[i] + total[j]);

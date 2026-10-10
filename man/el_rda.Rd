@@ -10,6 +10,8 @@ el_rda(
   scale = FALSE,
   samples = NULL,
   solver = c("auto", "exact", "irlba"),
+  transform = c("none", "clr"),
+  pseudocount = 1,
   sample = "sample",
   taxon = "taxon",
   quant = "quant"
@@ -30,6 +32,14 @@ inertia.}
 
 \item{solver}{\code{"exact"} uses a dense SVD and is meant for small tables,
 \code{"irlba"} a sparse truncated SVD, and \code{"auto"} chooses by size.}
+
+\item{transform}{\code{"none"} uses \code{x} as it is. \code{"clr"} takes raw counts and
+centred log-ratio transforms them, with every zero cell read as
+\code{log(pseudocount)}, without making the matrix dense.}
+
+\item{pseudocount}{For \code{transform = "clr"} only: a positive number, \code{"inverse_depth"}
+for \verb{1 / (the sample's total count)}, or a positive numeric vector named by
+sample. The unit is that of the counts.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}.}
 }

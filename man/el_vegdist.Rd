@@ -6,8 +6,9 @@
 \usage{
 el_vegdist(
   x,
-  method = c("bray", "jaccard", "euclidean"),
+  method = c("bray", "jaccard", "euclidean", "aitchison"),
   binary = FALSE,
+  pseudocount = 1,
   samples = NULL,
   batch_rows = 1e+06,
   threads = NULL,
@@ -24,10 +25,15 @@ has only such rows is kept as an all-zero sample. Negative values are
 allowed only for \code{method = "euclidean"} without \code{binary}, for example after
 \code{el_decostand(method = "rclr")}.}
 
-\item{method}{One of \code{"bray"}, \code{"jaccard"} and \code{"euclidean"}, as in
-\code{\link[vegan:vegdist]{vegan::vegdist()}}.}
+\item{method}{One of \code{"bray"}, \code{"jaccard"}, \code{"euclidean"} and \code{"aitchison"}, as
+in \code{\link[vegan:vegdist]{vegan::vegdist()}}. \code{"aitchison"} is the Euclidean distance between
+clr-transformed samples, computed from the counts.}
 
 \item{binary}{If \code{TRUE}, use presence and absence instead of quantities.}
+
+\item{pseudocount}{For \code{method = "aitchison"} only: added to the counts before
+the clr. A positive number, \code{"inverse_depth"} for \verb{1 / (the sample's total count)}, or a positive numeric vector named by sample. The unit is that of
+the counts, so give raw counts, not relative abundances.}
 
 \item{samples}{Optional vector of all sample IDs, which also sets the order
 of the result. Samples in \code{samples} that are absent from \code{x} are treated as

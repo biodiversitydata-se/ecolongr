@@ -11,9 +11,14 @@
 #'   has only such rows is kept as an all-zero sample. Negative values are
 #'   allowed only for `method = "euclidean"` without `binary`, for example after
 #'   `el_decostand(method = "rclr")`.
-#' @param method One of `"bray"`, `"jaccard"` and `"euclidean"`, as in
-#'   [vegan::vegdist()].
+#' @param method One of `"bray"`, `"jaccard"`, `"euclidean"` and `"aitchison"`, as
+#'   in [vegan::vegdist()]. `"aitchison"` is the Euclidean distance between
+#'   clr-transformed samples, computed from the counts.
 #' @param binary If `TRUE`, use presence and absence instead of quantities.
+#' @param pseudocount For `method = "aitchison"` only: added to the counts before
+#'   the clr. A positive number, `"inverse_depth"` for `1 / (the sample's total
+#'   count)`, or a positive numeric vector named by sample. The unit is that of
+#'   the counts, so give raw counts, not relative abundances.
 #' @param samples Optional vector of all sample IDs, which also sets the order
 #'   of the result. Samples in `samples` that are absent from `x` are treated as
 #'   all zero. Without it, the samples that occur in `x` are used, in
@@ -35,10 +40,14 @@
 #' @param sample,taxon,quant Names of the columns in `x`.
 #' @return A `dist` object.
 #' @export
-el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = FALSE,
-                       samples = NULL, batch_rows = 1e6, threads = NULL, memory_limit = NULL,
+el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean", "aitchison"), binary = FALSE,
+                       pseudocount = 1, samples = NULL, batch_rows = 1e6, threads = NULL, memory_limit = NULL,
                        sample = "sample", taxon = "taxon", quant = "quant") {
   method <- match.arg(method)
+  if (method == "aitchison") {
+    if (binary) stop("`binary` is not available for method = \"aitchison\"")
+    check_pseudocount_form(pseudocount)
+  }
   if (!is.numeric(batch_rows) || length(batch_rows) != 1 || is.na(batch_rows) || batch_rows < 1) {
     stop("`batch_rows` must be a positive number")
   }
@@ -56,6 +65,10 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = F
   summary <- stream_summary(stream)
   if (summary$missing > 0) stop("`", quant, "` has missing values")
   if (summary$negative > 0 && (method != "euclidean" || binary)) stop("`", quant, "` has negative values")
+  if (method == "aitchison") {
+    stream_clr(stream, resolve_pseudocount(pseudocount, summary$totals))
+    summary <- stream_summary(stream)
+  }
 
   totals <- summary$totals
   totals$sample <- as.character(totals$sample)
@@ -76,11 +89,12 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean"), binary = F
   square[at] <- totals$square
 
   acc <- numeric(n * (n - 1) / 2)
-  product <- method == "euclidean"
+  product <- method %in% c("euclidean", "aitchison")
   stream_batches(stream, samples, batch_rows, function(rows) {
     accumulate_pairs(acc, rows$sample, rows$taxon, rows$quant, n, product, threads = threads)
   })
-  finalize_dist(acc, total, square, n, match(method, c("bray", "jaccard", "euclidean")) - 1L, threads = threads)
+  finalize_dist(acc, total, square, n, match(method, c("bray", "jaccard", "euclidean", "aitchison")) - 1L,
+                threads = threads, ntaxa = if (method == "aitchison") length(stream_taxa(stream)) else 1)
 
   structure(acc, Size = n, Labels = samples, Diag = FALSE, Upper = FALSE,
             method = method, class = "dist")

@@ -3,5 +3,12 @@
 export(el_decostand)
 export(el_rda)
 export(el_vegdist)
+importClassesFrom(Matrix,dgCMatrix)
 importFrom(Rcpp,sourceCpp)
+importFrom(methods,
+  as,
+  new,
+  setClass,
+  setMethod
+)
 useDynLib(ecolongr, .registration = TRUE)

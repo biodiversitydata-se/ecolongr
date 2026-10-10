@@ -176,3 +176,22 @@ test_that("a sample that appears only with zero rows is kept as an all-zero samp
     )
   }
 })
+
+test_that("integer counts above the 32-bit square limit do not overflow", {
+  set.seed(2)
+  m <- matrix(0L, 12, 20, dimnames = list(sprintf("s%02d", 1:12), sprintf("t%02d", 1:20)))
+  m[sample(length(m), 90)] <- sample(c(60000L, 120000L, 3L, 90000L), 90, TRUE)
+  x <- long_table_nonzero(m)
+  x$quant <- as.integer(x$quant)
+  expect_type(x$quant, "integer")
+
+  for (method in c("euclidean", "aitchison", "bray", "jaccard")) {
+    expected <- if (method == "aitchison") vegan::vegdist(m[, colSums(m) > 0], "aitchison", pseudocount = 1) else vegan::vegdist(m, method)
+    expect_equal(as_full_matrix(el_vegdist(x, method = method)), as_full_matrix(expected), tolerance = 1e-10)
+  }
+
+  rda <- el_rda(x, k = 3, solver = "exact")
+  compare_rda(rda, m, k = 3)
+  rda_clr <- el_rda(x, k = 3, transform = "clr", solver = "exact")
+  compare_rda(rda_clr, vegan::decostand(m[, colSums(m) > 0], "clr", pseudocount = 1))
+})

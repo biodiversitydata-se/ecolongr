@@ -5,7 +5,7 @@ accumulate_pairs <- function(acc, sample, taxon, quant, n, product = FALSE, thre
     invisible(.Call(`_ecolongr_accumulate_pairs`, acc, sample, taxon, quant, n, product, threads))
 }
 
-finalize_dist <- function(acc, total, square, n, method, threads = 1L) {
-    invisible(.Call(`_ecolongr_finalize_dist`, acc, total, square, n, method, threads))
+finalize_dist <- function(acc, total, square, n, method, threads = 1L, ntaxa = 1) {
+    invisible(.Call(`_ecolongr_finalize_dist`, acc, total, square, n, method, threads, ntaxa))
 }
 
