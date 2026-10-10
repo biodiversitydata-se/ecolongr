@@ -65,22 +65,34 @@ void accumulate_pairs(NumericVector acc, IntegerVector sample, IntegerVector tax
     }
   }
 
+  R_xlen_t maxK = 0;
+  for (R_xlen_t g = 0; g < G; ++g) maxK = std::max(maxK, start[g + 1] - start[g]);
+
   double* out = acc.begin();
-  #pragma omp parallel for schedule(dynamic, 1) num_threads(threads)
-  for (int part = 0; part < P; ++part) {
-    const int idLo = cut[part], idHi = cut[part + 1];
-    if (idLo >= idHi) continue;
-    for (R_xlen_t g = 0; g < G; ++g) {
-      const R_xlen_t lo = start[g], hi = start[g + 1];
-      R_xlen_t a = std::lower_bound(s.begin() + lo, s.begin() + hi, idLo) - s.begin();
-      for (; a < hi && s[a] < idHi; ++a) {
-        const R_xlen_t i = s[a];
-        double* row = out + i * (2 * (R_xlen_t) n - i - 1) / 2 - i - 1;
-        const double qa = q[a];
-        if (product) {
-          for (R_xlen_t b = a + 1; b < hi; ++b) row[s[b]] += qa * q[b];
-        } else {
-          for (R_xlen_t b = a + 1; b < hi; ++b) row[s[b]] += qa < q[b] ? qa : q[b];
+  #pragma omp parallel num_threads(threads)
+  {
+    std::vector<double> buffer(maxK);
+    double* __restrict tmp = buffer.data();
+    #pragma omp for schedule(dynamic, 1)
+    for (int part = 0; part < P; ++part) {
+      const int idLo = cut[part], idHi = cut[part + 1];
+      if (idLo >= idHi) continue;
+      for (R_xlen_t g = 0; g < G; ++g) {
+        const R_xlen_t lo = start[g], hi = start[g + 1];
+        R_xlen_t a = std::lower_bound(s.begin() + lo, s.begin() + hi, idLo) - s.begin();
+        for (; a < hi && s[a] < idHi; ++a) {
+          const R_xlen_t i = s[a];
+          double* __restrict row = out + i * (2 * (R_xlen_t) n - i - 1) / 2 - i - 1;
+          const double qa = q[a];
+          const int* __restrict sb = s.data() + a + 1;
+          const double* __restrict qb = q.data() + a + 1;
+          const R_xlen_t len = hi - a - 1;
+          if (product) {
+            for (R_xlen_t j = 0; j < len; ++j) tmp[j] = qa * qb[j];
+          } else {
+            for (R_xlen_t j = 0; j < len; ++j) tmp[j] = qa < qb[j] ? qa : qb[j];
+          }
+          for (R_xlen_t j = 0; j < len; ++j) row[sb[j]] += tmp[j];
         }
       }
     }
