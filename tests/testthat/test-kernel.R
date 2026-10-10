@@ -118,3 +118,15 @@ test_that("accumulate_pairs with more threads than samples still works", {
 
   expect_equal(acc, naive_pairs(d$sample, d$taxon, d$quant, 5L))
 })
+
+test_that("a table spanning many cache blocks matches vegan", {
+  set.seed(21)
+  m <- matrix(0, 1500, 300, dimnames = list(sprintf("s%04d", 1:1500), sprintf("t%03d", 1:300)))
+  m[sample(length(m), 40000)] <- rpois(40000, 3) + 1
+  m <- m[rowSums(m) > 0, ]
+
+  for (threads in c(1L, 5L)) {
+    got <- el_vegdist(long_table(m), threads = threads)
+    expect_equal(as_full_matrix(got), as_full_matrix(vegan::vegdist(m)), tolerance = 1e-10)
+  }
+})

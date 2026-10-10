@@ -11,10 +11,10 @@ using namespace Rcpp;
 // acc holds the pairs i < j in the order of a dist object: column i, rows j > i.
 // Rows must be grouped by taxon; sample ids are 0-based.
 //
-// Within a taxon the samples are sorted, and each thread owns a range of sample
-// ids. A pair is written by the thread that owns its smaller id, so no two
-// threads write the same cell and every cell is added in taxon order whatever
-// the number of threads.
+// Within a taxon the samples are sorted, and each block of sample ids is handled
+// by one thread at a time. A pair is written in the block that owns its smaller
+// id, so no two threads write the same cell and every cell is added in taxon
+// order whatever the number of threads.
 // [[Rcpp::export]]
 void accumulate_pairs(NumericVector acc, IntegerVector sample, IntegerVector taxon,
                       NumericVector quant, int n, bool product = false, int threads = 1) {
@@ -49,27 +49,27 @@ void accumulate_pairs(NumericVector acc, IntegerVector sample, IntegerVector tax
     std::copy(q2.begin(), q2.end(), q.begin() + lo);
   }
 
-  // Work per sample id: the number of larger ids sharing a taxon with it.
-  std::vector<double> work(n, 0.0);
-  for (R_xlen_t g = 0; g < G; ++g) {
-    const R_xlen_t lo = start[g], hi = start[g + 1];
-    for (R_xlen_t a = lo; a < hi; ++a) work[s[a]] += (double) (hi - 1 - a);
-  }
-  const int T = std::min(threads, n);
-  std::vector<int> cut(T + 1, n);
+  // Blocks of consecutive sample ids, each owning about 1 MB of acc so that it stays
+  // in cache while all taxa are applied to it; at least four per thread for balance.
+  const R_xlen_t cells = (R_xlen_t) n * (n - 1) / 2;
+  const R_xlen_t blockCells = 131072;
+  int P = (int) std::min<R_xlen_t>(n, std::max<R_xlen_t>(4 * (R_xlen_t) threads, (cells + blockCells - 1) / blockCells));
+  std::vector<int> cut(P + 1, n);
   cut[0] = 0;
-  const double total = std::accumulate(work.begin(), work.end(), 0.0);
-  double seen = 0;
-  int t = 1;
-  for (int id = 0; id < n && t < T; ++id) {
-    seen += work[id];
-    while (t < T && seen >= total * t / T) cut[t++] = id + 1;
+  {
+    int part = 1;
+    R_xlen_t seen = 0;
+    for (int id = 0; id < n && part < P; ++id) {
+      seen += n - 1 - id;
+      while (part < P && seen >= cells * part / P) cut[part++] = id + 1;
+    }
   }
 
   double* out = acc.begin();
-  #pragma omp parallel for schedule(static, 1) num_threads(T)
-  for (int part = 0; part < T; ++part) {
+  #pragma omp parallel for schedule(dynamic, 1) num_threads(threads)
+  for (int part = 0; part < P; ++part) {
     const int idLo = cut[part], idHi = cut[part + 1];
+    if (idLo >= idHi) continue;
     for (R_xlen_t g = 0; g < G; ++g) {
       const R_xlen_t lo = start[g], hi = start[g + 1];
       R_xlen_t a = std::lower_bound(s.begin() + lo, s.begin() + hi, idLo) - s.begin();
