@@ -243,7 +243,31 @@ Implemented as `el_decostand()`; the result is a lazy `duckplyr` table and the t
   There is no `vegan` oracle for the zero convention used here.
 - `check = TRUE` (default) runs one query to stop on negative or missing quantities; `check = FALSE` is fully lazy.
 
-Not planned: `clr` with a pseudocount, which fills the matrix.
+`clr` with a pseudocount has no long-table form, because it makes every cell non-zero.
+It is therefore not a method of `el_decostand()` (which stops and says so) but is computed from the raw counts inside `el_vegdist(method = "aitchison")` and `el_rda(transform = "clr")`.
+
+### `clr`
+
+- A clr row is `log(x + pc)` minus its mean over the *p* taxa.
+  Write `b = log(1 + x / pc)`, which is 0 for a zero cell and sparse.
+  The row mean of `log(x + pc)` is `log(pc)` plus the mean of `b`, so the clr row is `b` minus its row mean: a sparse matrix, centred per row.
+- Aitchison distance (Euclidean on clr) between samples *i* and *j* is `sqrt(Σb_i² + Σb_j² − 2 Σ_shared b_i b_j − (Σb_i − Σb_j)² / p)`.
+  The shared products are the same kernel as for Euclidean distance.
+- The centred clr matrix is `B − u 1' − 1 c'` with `B` sparse, so `el_rda()` uses an implicit operator for `irlba`, and the exact solver for small tables.
+- `pseudocount` is in the units of the counts: a positive number, `"inverse_depth"` for `1 / (the sample's total count)`, or a numeric vector named by sample.
+  Give raw counts, not relative abundances.
+  The user's practice is `count + 1/N_i` per sample, which compensates for the higher detection limit of shallow samples.
+- The taxa of the table define *p*, as `vegan` after dropping all-zero columns.
+  An all-zero sample listed in `samples` is the zero row of `vegan`: its clr is 0 and it sits at the origin.
+- Measured on sequoia: 5,000 samples and 11.1M rows, `el_vegdist` 11 s and 1.0 GB, `el_rda` (5 axes) 35 s and 1.7 GB; 20,000 samples and 19.4M rows, 29 s and 2.8 GB, and 62 s and 3.1 GB.
+- On the LMO time series (414 samples, 60,633 ASVs, 99% zeros), `el_rda` on the full table takes under a second and reproduces the dense `vegan` results exactly.
+
+#### Choosing a transformation
+
+On the LMO series, judged by how well PC1–PC2 show the seasonal cycle (see the memory notes of the analysis): Hellinger is good with or without filtering (seasonal R² 0.65), `clr` is poor on all 60,633 ASVs (0.28) but matches Hellinger once ASVs present in fewer than 20% of the samples are removed (0.64), and `rclr` with zeros as 0 is poor throughout (0.19–0.38).
+The pseudocount mattered little, smaller ones doing slightly better.
+`clr` should be used on a prevalence-filtered table.
+
 
 `duckplyr` translates few functions.
 Checked on 2026-10-10: `log`, `log10`, `abs`, `round`, `as.integer`, arithmetic and comparisons work; `sqrt`, `exp`, `floor`, `^`, `pmin`, `ifelse`, `cross_join` and `sum()` without `na.rm` inside a window do not.
@@ -310,5 +334,5 @@ If one of them already computes a measure correctly on sparse input, a thin wrap
 - Whether to depend on `vegan`.
   It is needed for tests, and for returning compatible objects (`vegan::rda` class) if we choose to.
 - Whether omitting `samples` should only be documented, or also give a message that all-zero samples cannot be detected.
-- Whether to implement the matrix completion behind `impute = TRUE` (for `el_rda()` on `rclr` and for a true robust Aitchison distance), or keep absent cells as 0 and only document the difference.
+- Whether to implement the matrix completion behind `impute = TRUE` (for `el_rda()` on `rclr` and for a true robust Aitchison distance), or keep absent cells as 0 and only document the difference. On the LMO series imputed `rclr` was better than zeros as 0 but below `clr` at every filtering level, so this is lower priority.
 - Which indices beyond Bray–Curtis, Jaccard and Euclidean are worth the effort.

@@ -75,11 +75,15 @@ Attach it yourself, as above, to use its verbs on the table.
 
 | function | what it does | `vegan` equivalent |
 |---|---|---|
-| `el_vegdist()` | `bray`, `jaccard` and `euclidean` dissimilarities, optionally `binary`; returns a `dist` | `vegdist()` |
+| `el_vegdist()` | `bray`, `jaccard`, `euclidean` and `aitchison` dissimilarities, optionally `binary`; returns a `dist` | `vegdist()` |
 | `el_decostand()` | `total`, `hellinger`, `log`, `pa` and `rclr`, as a lazy long table | `decostand()` |
-| `el_rda()` | unconstrained PCA, the first `k` axes; returns an `rda` object | `rda()` |
+| `el_rda()` | unconstrained PCA of the table or of its clr, the first `k` axes; returns an `rda` object | `rda()` |
 
 `metaMDS()` and `adonis2()` only need a `dist`, so use `vegan`'s own on the result of `el_vegdist()`.
+
+`clr` is not a method of `el_decostand()`, because it makes every cell non-zero.
+Use `el_vegdist(method = "aitchison")` or `el_rda(transform = "clr")` on the raw counts instead.
+The `pseudocount` is in the units of the counts: a positive number, `"inverse_depth"` for `1 / (the sample's total count)`, or a numeric vector named by sample.
 
 Conventions:
 
@@ -102,6 +106,9 @@ The tests compare every function and option with `vegan` on `varespec` and a syn
   `el_decostand("rclr")` matches `decostand(x, "rclr", impute = FALSE)`.
   A later step that reads absent cells as 0 puts those taxa at the sample's geometric mean.
   Euclidean distance on that is therefore not `vegan`'s `robust.aitchison` when the table has zeros, but it is identical when it has none.
+- **`clr` needs a prevalence filter in practice.**
+  On a 414-sample, 60,633-ASV time series with 99% zeros, PC1–PC2 of a `clr` PCA showed the seasonal cycle poorly (seasonal R² 0.28), but as well as Hellinger once ASVs present in fewer than 20% of the samples were removed (0.64).
+  Filter with `duckplyr` verbs before the call, for example `semi_join()` against the ASVs with `n_distinct(sample) >= 0.2 * n_distinct(all samples)`.
 - **`log` follows `vegan` without the warning:** if any value is not a whole number, everything is first divided by the smallest positive value in the table.
 - **`el_rda()` returns the first `k` axes only.**
   `scores()`, `eigenvals()`, `plot()` and `screeplot()` work.
