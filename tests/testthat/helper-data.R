@@ -112,3 +112,18 @@ clr_reference <- function(m, pseudocount) {
   y <- log(m + pc)
   y - rowMeans(y)
 }
+
+shuffled_within_taxon <- function(d, seed = 3) {
+  set.seed(seed)
+  d[order(d$taxon, runif(nrow(d))), ]
+}
+
+random_community <- function(n_samples = 60L, n_taxa = 300L, seed = 11) {
+  set.seed(seed)
+  d <- unique(data.frame(
+    sample = sample.int(n_samples, 1500, TRUE) - 1L,
+    taxon = sort(sample.int(n_taxa, 1500, TRUE))
+  ))
+  d$quant <- rpois(nrow(d), 5) + 1
+  shuffled_within_taxon(d)
+}

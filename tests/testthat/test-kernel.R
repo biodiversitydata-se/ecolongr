@@ -63,11 +63,6 @@ test_that("a taxon in a single sample adds nothing", {
   expect_equal(acc, c(0, 0, 0))
 })
 
-shuffled_within_taxon <- function(d, seed = 3) {
-  set.seed(seed)
-  d[order(d$taxon, runif(nrow(d))), ]
-}
-
 test_that("accumulate_pairs does not need the samples sorted within a taxon", {
   d <- shuffled_within_taxon(pairs_table())
   expect_false(identical(d$sample, pairs_table()$sample))
@@ -78,16 +73,6 @@ test_that("accumulate_pairs does not need the samples sorted within a taxon", {
     expect_equal(acc, naive_pairs(d$sample, d$taxon, d$quant, 5L, product = product))
   }
 })
-
-random_community <- function(n_samples = 60L, n_taxa = 300L, seed = 11) {
-  set.seed(seed)
-  d <- unique(data.frame(
-    sample = sample.int(n_samples, 1500, TRUE) - 1L,
-    taxon = sort(sample.int(n_taxa, 1500, TRUE))
-  ))
-  d$quant <- rpois(nrow(d), 5) + 1
-  shuffled_within_taxon(d)
-}
 
 test_that("accumulate_pairs gives identical results for any number of threads", {
   d <- random_community()
