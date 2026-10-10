@@ -127,3 +127,22 @@ random_community <- function(n_samples = 60L, n_taxa = 300L, seed = 11) {
   d$quant <- rpois(nrow(d), 5) + 1
   shuffled_within_taxon(d)
 }
+
+rclr_triplets <- function(m) {
+  r <- suppressWarnings(vegan::decostand(m, "rclr", impute = FALSE))
+  r <- as.matrix(r)
+  idx <- which(!is.na(r), arr.ind = TRUE)
+  list(i = idx[, 1] - 1L, j = idx[, 2] - 1L, v = r[idx], n = nrow(m), p = ncol(m))
+}
+
+double_centre <- function(m) {
+  m <- sweep(m, 2, colMeans(m))
+  sweep(m, 1, rowMeans(m))
+}
+
+vegan_rclr_imputed <- function(m) {
+  out <- as.matrix(suppressWarnings(vegan::decostand(m, "rclr", impute = TRUE)))
+  attr(out, "decostand") <- NULL
+  attr(out, "parameters") <- NULL
+  out
+}
