@@ -19,6 +19,9 @@ Read it first.
 - Use `.by =`, not `group_by()`.
 - Use `na.rm = TRUE` in `sum()` and `mean()` inside `mutate(.by = )`; without it `duckplyr` falls back.
 - Collect only where `DESIGN.md` says a function materializes.
+- Translatable: `log`, `log10`, `abs`, `round`, `as.integer`, arithmetic, comparisons, `if_else`, `min`, `max`, `sum`, `mean`.
+  Not translatable: `sqrt`, `exp`, `floor`, `^`, `pmin`, `ifelse`, `cross_join`.
+  Use `round(x) != x` for "not a whole number", a window `min()` in `mutate()` for a table-wide value, and `read_sql_duckdb()` after `compute_parquet()` where SQL is the only way.
 
 ## Commands
 

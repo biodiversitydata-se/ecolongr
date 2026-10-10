@@ -50,5 +50,8 @@ vegan_decostand <- function(m, method, ...) {
   } else {
     suppressWarnings(vegan::decostand(m, method = method, ...))
   }
-  as.matrix(out)
+  out <- as.matrix(out)
+  attr(out, "decostand") <- NULL
+  attr(out, "parameters") <- NULL
+  out
 }

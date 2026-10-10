@@ -216,15 +216,24 @@ Result objects keep the `vegan` classes (`dist`, and `rda` where feasible), so t
 
 ### `decostand`
 
-Methods that act within a sample and need only the non-zero cells, so the result stays sparse:
+Methods that act within a sample and need only the non-zero cells, so the result stays a long table without zeros.
+Implemented as `el_decostand()`; the result is a lazy `duckplyr` table and the tests compare every method with `vegan::decostand`.
 
-- `total`, `hellinger`, `log`, `pa`.
+- `total`, `log`, `pa`, `rclr`: lazy queries.
+- `hellinger`: `duckplyr` cannot translate `sqrt()`, so the relative abundances are written to a temporary Parquet file and the square root is taken in SQL (`read_sql_duckdb()`).
+  The file stays until the R session ends.
+- `log` follows `vegan`: `log_b(x) + 1`, and if any value in the whole table is not a whole number, all values are first divided by the smallest positive value of the table (a table-wide window, not per sample).
+  There is no warning.
 - `rclr`: `log(x / g(x > 0))`, where `g` is the geometric mean of the positive values in the sample.
   `vegan` 2.7-6 returns `NA` for zeros with `impute = FALSE`, and the non-zero cells equal `log(x) - mean(log(x[x > 0]))` exactly.
   Called without `impute`, it fills the zeros by matrix completion, so the reference call must pass `impute = FALSE`.
   In a long table the zeros are simply absent rows.
+- `check = TRUE` (default) runs one query to stop on negative or missing quantities; `check = FALSE` is fully lazy.
 
 Not planned: `clr` with a pseudocount, which fills the matrix.
+
+`duckplyr` translates few functions.
+Checked on 2026-10-10: `log`, `log10`, `abs`, `round`, `as.integer`, arithmetic and comparisons work; `sqrt`, `exp`, `floor`, `^`, `pmin`, `ifelse`, `cross_join` and `sum()` without `na.rm` inside a window do not.
 
 ### `rda`, unconstrained
 

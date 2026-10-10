@@ -39,7 +39,8 @@ test_that("log divides by the smallest positive value of the whole table when an
   got <- wide_from_long(as.data.frame(el_decostand(long_table(m), method = "log")), m)
 
   expect_equal(got, vegan_decostand(m, "log"), tolerance = 1e-10)
-  expect_true(min(got[m > 0]) < 1)
+  expect_equal(got[5, 7], 1)
+  expect_equal(got[5, 8], log2(7) + 1)
 })
 
 test_that("log leaves whole-number data unscaled", {
@@ -85,7 +86,7 @@ test_that("total gives every sample the sum 1 and hellinger squares back to tota
   total <- as.data.frame(el_decostand(x, "total"))
   hellinger <- as.data.frame(el_decostand(x, "hellinger"))
 
-  expect_equal(unname(tapply(total$quant, total$sample, sum)), rep(1, nlevels(factor(total$sample))), tolerance = 1e-12)
+  expect_equal(as.numeric(tapply(total$quant, total$sample, sum)), rep(1, nlevels(factor(total$sample))), tolerance = 1e-12)
   key <- function(d) paste(d$sample, d$taxon)
   expect_equal(hellinger$quant[match(key(total), key(hellinger))]^2, total$quant, tolerance = 1e-12)
 })
@@ -129,7 +130,7 @@ test_that("rclr is 0 for a sample with a single taxon and sums to 0 within every
   got <- as.data.frame(el_decostand(long_table(m), "rclr"))
 
   expect_equal(got$quant[got$sample == "s03"], 0)
-  expect_equal(unname(tapply(got$quant, got$sample, sum)), rep(0, length(unique(got$sample))), tolerance = 1e-10)
+  expect_equal(as.numeric(tapply(got$quant, got$sample, sum)), rep(0, length(unique(got$sample))), tolerance = 1e-10)
 })
 
 test_that("decostand then vegdist gives the same distances as vegan", {
