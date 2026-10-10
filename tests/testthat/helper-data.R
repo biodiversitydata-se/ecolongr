@@ -37,3 +37,18 @@ batch_table <- function() {
     quant  = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
   )
 }
+
+wide_from_long <- function(d, template, sample = "sample", taxon = "taxon", quant = "quant") {
+  m <- matrix(0, nrow(template), ncol(template), dimnames = dimnames(template))
+  m[cbind(match(d[[sample]], rownames(template)), match(d[[taxon]], colnames(template)))] <- d[[quant]]
+  m
+}
+
+vegan_decostand <- function(m, method, ...) {
+  out <- if (method == "rclr") {
+    vegan::decostand(m, method = "rclr", impute = FALSE)
+  } else {
+    suppressWarnings(vegan::decostand(m, method = method, ...))
+  }
+  as.matrix(out)
+}
