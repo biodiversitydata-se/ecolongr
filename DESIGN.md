@@ -336,6 +336,33 @@ What works now instead:
 
 Revisit it if constrained ordination of large tables, rather than of the distance matrix, turns out to be needed.
 
+## Benchmark machine
+
+Timings and peak memory in this document marked "measured on sequoia" come from one shared server.
+They are indicative, not a specification: wall times depend on how busy the machine is, and peak memory does not.
+
+| | |
+|---|---|
+| CPU | AMD Ryzen 9 3900X, 12 cores, 24 hardware threads, one socket |
+| Memory | 125 GB RAM |
+| Disk | NVMe SSD |
+| System | Ubuntu 24.04, Linux 6.8 |
+| Software | R 4.6.1, `duckplyr` 1.2.1, `duckdb` 1.5.4, `vegan` 2.7.5 |
+| Load | Shared with other users' jobs; load average typically 16–24 on the 24 threads |
+
+- Because the machine is busy, a run with `threads = 12` competes for cores and is slower than on an idle machine of the same size.
+  Compare methods measured in the same session rather than across sessions.
+- Peak memory is the resident set size (`VmHWM` in `/proc/self/status`) of the R process, which includes the DuckDB engine running inside it.
+  Other users' jobs do not affect it.
+- The package is installed with `R CMD INSTALL` and run with `Rscript`.
+  `devtools::load_all()` compiles with `-O0` and is about ten times slower, so it is not used for timings.
+- `bench/gen.R` writes a synthetic table as Parquet with a given number of samples, taxa and rows.
+  Taxon frequencies follow a power law (Zipf), so a few taxa occur in nearly every sample.
+  That is the expensive case for the pairwise kernel, whose work grows with the square of the number of samples per taxon.
+  `bench/run.R` times `el_vegdist()` on such a file and reports the peak resident memory.
+- The largest tables here (20,000 samples, 499,000 taxa) were run only on this server.
+  A dense matrix of that table would take about 80 GB, which does not fit on a 30 GB laptop; the long-table methods needed 2–4 GB.
+
 ## Testing against vegan
 
 This is the main deliverable.
