@@ -29,6 +29,9 @@ jobs:
         with:
           r-version: ${{ matrix.config.r }}
           use-public-rspm: true
+      - name: Show platform
+        shell: Rscript {0}
+        run: cat(R.version$platform, R.version.string, parallel::detectCores(), "cores\n")
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
