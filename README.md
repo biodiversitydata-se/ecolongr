@@ -2,7 +2,8 @@
 
 [![R-CMD-check](https://github.com/biodiversitydata-se/ecolongr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/biodiversitydata-se/ecolongr/actions/workflows/R-CMD-check.yaml)
 
-Community ecology analyses on long tables.
+Community ecology analyses with an aim to complement [Vegan](https://cran.r-project.org/web/packages/vegan/index.html) for large datasets based on long tables.
+The priorities are memory economy first and efficiency second.
 
 `ecolongr` computes distances, transformations and ordinations from a table with one row per sample and taxon, without the zeros.
 The taxa × samples matrix that `vegan` needs is never built.
@@ -15,6 +16,27 @@ Amplicon data has millions of ASVs and thousands of samples, and almost every ce
 `vegan` needs the dense matrix: 500,000 ASVs × 20,000 samples is about 80 GB of doubles.
 `ecolongr` works on the non-zero rows only, in the form the data is delivered in.
 For a table of that size, `el_vegdist()` took 25 seconds and 2.4 GB with 12 threads, of which 1.6 GB is the result itself.
+
+## Reading the table
+
+`ecolongr` works on lazy tables from [`duckplyr`](https://duckplyr.tidyverse.org/).
+A lazy table is a query that DuckDB runs only when a result is needed, so reading, filtering and joining the table never loads it into R.
+Parquet files suit this best, because DuckDB reads only the columns and row groups a query needs.
+Text files work too, and keep memory low in the same way:
+
+```r
+library(duckplyr)
+
+counts <- read_csv_duckdb(
+  "counts.tsv.gz",
+  options = list(delim = "\t", header = TRUE),
+  prudence = "stingy"
+)
+```
+
+DuckDB parses a text file again for every query.
+To pay that cost once, write the table to Parquet with `compute_parquet(counts, "counts.parquet")` and read that file in the later steps.
+A data frame in R is accepted as well, but it is already in memory.
 
 ## Status
 
