@@ -139,3 +139,36 @@ test_that("anova of an unconstrained el_rda result gives vegan's table: no const
 
   expect_equal(as.data.frame(stats::anova(got)), as.data.frame(stats::anova(ref)), ignore_attr = TRUE, tolerance = 1e-8)
 })
+
+test_that("Bray-Curtis on relative abundances, as in the README, matches vegan, also through metaMDS and envfit", {
+  got <- el_decostand(long_table(m), "total") |> el_vegdist("bray", samples = rownames(m))
+  ref <- vegan::vegdist(vegan::decostand(m, "total"), "bray")
+  expect_equal(as.matrix(got), as.matrix(ref), tolerance = 1e-10)
+
+  set.seed(4)
+  nmds_got <- vegan::metaMDS(got, k = 2, trace = 0, try = 3, trymax = 3)
+  set.seed(4)
+  nmds_ref <- vegan::metaMDS(ref, k = 2, trace = 0, try = 3, trymax = 3)
+  set.seed(5)
+  fit_got <- vegan::envfit(nmds_got, env, permutations = 199)
+  set.seed(5)
+  fit_ref <- vegan::envfit(nmds_ref, env, permutations = 199)
+
+  expect_equal(fit_got$vectors$r, fit_ref$vectors$r, tolerance = 1e-6)
+  expect_equal(fit_got$vectors$pvals, fit_ref$vectors$pvals)
+})
+
+test_that("envfit on an el_rda result drops samples with a missing variable, as it does for vegan's", {
+  got <- el_rda(long_table(m), k = 5, solver = "exact", samples = rownames(m))
+  ref <- vegan::rda(m)
+  env_na <- env
+  env_na$Humdepth[c(3, 10)] <- NA
+
+  set.seed(6)
+  fit_got <- vegan::envfit(got, env_na, choices = 1:2, permutations = 199, na.rm = TRUE)
+  set.seed(6)
+  fit_ref <- vegan::envfit(ref, env_na, choices = 1:2, permutations = 199, na.rm = TRUE)
+
+  expect_equal(fit_got$vectors$r, fit_ref$vectors$r, tolerance = 1e-8)
+  expect_equal(fit_got$vectors$pvals, fit_ref$vectors$pvals)
+})

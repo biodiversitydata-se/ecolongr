@@ -293,8 +293,11 @@ Implemented as `el_rda()`.
 - *n* is the number of samples in the full set.
   All-zero samples listed in `samples` count in *n*, the column means and the total inertia, as zero rows do in `vegan`.
 - Only the first *k* axes are returned, where `vegan` returns all.
-- The result has class `rda` and `cca`, so `scores()` (scalings 1, 2 and 3), `eigenvals()`, `plot()` and `screeplot()` work.
-  `predict()`, `anova()` and `fitted()` need the full matrix and do not.
+- The result has class `ecolongr_rda`, `rda` and `cca`, so `scores()` (scalings 1, 2 and 3), `eigenvals()`, `summary()`, `plot()`, `biplot()`, `screeplot()`, `envfit()` and `procrustes()` work (tested against `vegan`).
+  `predict()` and `fitted()` need the full matrix and give an error.
+  `anova()` gives `vegan`'s table for an unconstrained ordination, which has no constrained component.
+- The extra class exists for one `eigenvals()` method that sets the `sumev` attribute to the total inertia.
+  Without it `summary()` takes the proportions of the *k* kept eigenvalues instead of the whole.
 - Axis signs are arbitrary.
 - Input is a transformed long table, composed with `el_decostand()`; `clr` with a pseudocount is not implemented.
   It fills the matrix, but only with one constant per sample, so it is a sparse matrix plus a rank-1 term and fits the implicit method.
@@ -308,6 +311,30 @@ Measured on sequoia, 5 axes, with 12 or fewer threads for the sort and `irlba` s
 
 A dense matrix for the second table would be about 80 GB.
 The higher peak with `rclr` is the lazy window step in the `duckplyr` connection (see above).
+
+### `rda` with explanatory variables: postponed
+
+`vegan::rda(Y ~ X)` takes a second, small matrix of explanatory variables, one row per sample, and splits the variation into a constrained and an unconstrained part.
+It is not implemented, and the decision is to leave it for now.
+
+What it would take:
+
+- The maths fits the long-table approach.
+  Regress the centred table on `X` through a QR of `X`: the fitted part has rank at most the number of variables, so its SVD is small, and the residual is the sparse table minus a low-rank part, which the implicit operator used for `clr` can handle with `irlba`.
+- Partial RDA (`Condition()`) has the same structure.
+- The cost is the permutation test.
+  `vegan::anova()`, `permutest()`, `RsquareAdj()` and `ordiR2step()` read the dense fitted matrix stored in the object, which we do not have.
+  We would write our own test: permuting the samples only needs the small matrix `Q'Y` recomputed, one sparse product per permutation, so it is feasible but is new code and a new object layout, not a flag on `el_rda()`.
+
+What works now instead:
+
+- `vegan::envfit()` fits variables to the axes of an unconstrained `el_rda()` result or of `metaMDS()` on an `el_vegdist()` distance, with permutation p-values (tested, including missing values with `na.rm = TRUE`).
+  It is a post-hoc fit, not a constrained ordination.
+- `vegan::dbrda()` and `capscale()` take the `dist` from `el_vegdist()`.
+  The distance matrix grows with the square of the number of samples, which is fine up to a few thousand.
+- `vegan::adonis2()` on a `dist` tests variables against the whole community.
+
+Revisit it if constrained ordination of large tables, rather than of the distance matrix, turns out to be needed.
 
 ## Testing against vegan
 
@@ -344,5 +371,6 @@ If one of them already computes a measure correctly on sparse input, a thin wrap
 - Whether to depend on `vegan`.
   It is needed for tests, and for returning compatible objects (`vegan::rda` class) if we choose to.
 - Whether omitting `samples` should only be documented, or also give a message that all-zero samples cannot be detected.
-- Whether to implement the matrix completion behind `impute = TRUE` (for `el_rda()` on `rclr` and for a true robust Aitchison distance), or keep absent cells as 0 and only document the difference. On the LMO series imputed `rclr` was better than zeros as 0 but below `clr` at every filtering level, so this is lower priority.
+- Whether to add `rda` with explanatory variables (see above).
+- How the cost of the matrix completion grows with `ropt` above 3 on large tables, which has not been measured.
 - Which indices beyond Bray–Curtis, Jaccard and Euclidean are worth the effort.

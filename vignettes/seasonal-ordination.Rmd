@@ -26,6 +26,7 @@ library(ecolongr)
 
 The dataset is [`lmo_2011-2023_16s`](https://www.gbif.se/ipt/resource?r=lmo_2011-2023_16s) on the GBIF IPT of the Swedish node.
 Its Darwin Core archive (109 MB zipped, 1.1 GB unpacked) holds 405,592 occurrences: one row per ASV and sample, with the read count in `organismQuantity`.
+The same measurements table has the temperature and, for most samples, the salinity.
 It has two size fractions of the water, stored as the measurement `filter_fraction` in `extendedmeasurementorfact.txt`: `3` (particle associated, trapped on a 3 µm filter) and `3-0.2` (free living, trapped on a 0.2 µm filter after the 3 µm one).
 
 The archive has the layout of GBIF's standard Darwin Core archives, not that of the ZIP files the `asvoccur` package reads, so we read it directly.
@@ -60,7 +61,7 @@ metadata <- occurrence |>
 That is 162,171 rows, 347 samples and 24,286 ASVs.
 `prudence = "stingy"` makes `duckplyr` stop with an error if it would otherwise copy a whole table into R.
 
-To keep the vignette fast, the package contains a smaller version of the same table: the free-living fraction, with only the ASVs present in at least 5% of the samples (`data-raw/make_lmo_extdata.R` makes it from the archive).
+To keep the vignette fast, the package contains a smaller version of the same table: the free-living fraction, with only the ASVs present in at least 5% of the samples (`data-raw/make_lmo_extdata.R` makes it from the archive, with the temperature and salinity of each sample).
 The rest of the vignette uses it.
 
 ```{r bundled}
@@ -98,6 +99,19 @@ metadata <- metadata[metadata$sample %in% as.data.frame(deep)$sample, ]
 nrow(metadata)
 ```
 
+## Colouring by season
+
+We colour the samples by day of year, with a palette that returns to its start, so that a seasonal cycle shows as a ring with the colours in order.
+
+```{r plot-helper}
+season_colours <- function(day) hcl(h = 360 * day / 366, c = 90, l = 60)
+
+plot_season <- function(ordination, main, ...) {
+  sites <- vegan::scores(ordination, display = "sites", choices = 1:2)
+  plot(sites, col = season_colours(metadata$day_of_year), pch = 19, asp = 1, main = main, ...)
+}
+```
+
 ## Hellinger distances
 
 Hellinger standardisation followed by Euclidean distance is a common choice for amplicon counts.
@@ -118,19 +132,29 @@ set.seed(1)
 vegan::adonis2(d_hellinger ~ month, data = metadata, permutations = 199)
 ```
 
+## Bray–Curtis distances and NMDS
+
+Non-metric multidimensional scaling (NMDS) uses only the ranks of the distances, so it needs no elaborate transformation.
+A common choice is Bray–Curtis distance on relative abundances.
+`el_decostand("total")` makes the relative abundances, and `vegan::metaMDS()` takes the `dist`.
+Given a `dist`, `metaMDS()` has no species scores and does no transformation of its own, which it would do for a community matrix; that matrix is what this package avoids building.
+
+```{r nmds}
+d_bray <- counts |>
+  el_decostand("total") |>
+  el_vegdist("bray", samples = metadata$sample)
+
+set.seed(1)
+nmds <- vegan::metaMDS(d_bray, k = 2, trace = 0, trymax = 10)
+nmds$stress
+plot_season(nmds, "NMDS, Bray-Curtis on relative abundances")
+```
+
+The seasons are ordered along the cloud, but a few samples lie far from the rest and compress the view.
+
 ## Principal components
 
 `el_rda()` computes the first axes of a PCA without making the dense table.
-We colour the samples by day of year, with a palette that returns to its start, so that a seasonal cycle shows as a ring with the colours in order.
-
-```{r plot-helper}
-season_colours <- function(day) hcl(h = 360 * day / 366, c = 90, l = 60)
-
-plot_season <- function(pca, main) {
-  sites <- vegan::scores(pca, display = "sites", choices = 1:2)
-  plot(sites, col = season_colours(metadata$day_of_year), pch = 19, asp = 1, main = main)
-}
-```
 
 ```{r pca-hellinger}
 pca_hellinger <- counts |>
@@ -151,7 +175,8 @@ Zeros need a pseudocount.
 Give the raw counts: the pseudocount is in count units.
 
 `clr` makes every cell non-zero, so it is not a method of `el_decostand()`.
-`el_vegdist(method = "aitchison")` and `el_rda(transform = "clr")` take the counts and never build the dense table.
+It is computed from the counts inside the two functions that use it, and the dense table is never built.
+`el_vegdist(method = "aitchison")` returns the Aitchison distance, and `el_rda(transform = "clr")` is a PCA of the clr, whose sample distances in all axes are the same Aitchison distances.
 
 On amplicon data, the many rare ASVs dominate a clr unless they are removed.
 We keep the ASVs present in at least 20% of the samples:
@@ -192,6 +217,44 @@ plot_season(pca_clr_all, "clr, ASVs in at least 5% of the samples")
 ```
 
 With the ASVs that occur in 5–20% of the samples included, the points spread out more and the order of the colours is less clear.
+
+## Environmental variables
+
+The temperature and the salinity of each sample are in `metadata`.
+`vegan::envfit()` fits them to the ordination, as arrows in the plot, and gives the share of variation each explains and a permutation p-value.
+Samples without a salinity are dropped with `na.rm = TRUE`.
+
+```{r envfit}
+env <- metadata[, c("temperature", "salinity")]
+
+set.seed(3)
+fit <- vegan::envfit(pca_clr, env, choices = 1:2, permutations = 199, na.rm = TRUE)
+fit
+
+plot_season(pca_clr, "clr, with temperature and salinity", xlim = c(-8, 12))
+plot(fit, add = TRUE, arrow.mul = 5)
+```
+
+Temperature lies along the first axis and explains much more of the variation (`r2`) than salinity, which points the other way.
+
+## Filling the zeros: `rclr`
+
+The robust clr (`rclr`) takes the logarithm of the non-zero counts only and fills the zeros by a low-rank matrix completion.
+`vegan::decostand(x, "rclr")` does this, and so do `el_vegdist(method = "robust.aitchison")` and `el_rda(transform = "rclr")`, on the raw counts and without the dense table.
+Every cell is filled, so `el_decostand("rclr")` cannot return it as a table without zeros; it only takes the log-ratio of the non-zero cells.
+
+The completion has rank `ropt`, 3 as in `vegan`, so a PCA of it has at most `ropt` axes:
+
+```{r rclr}
+pca_rclr <- counts |>
+  el_rda(k = 3, transform = "rclr", ropt = 3, samples = metadata$sample)
+
+plot_season(pca_rclr, "rclr, completion of rank 3")
+summary(pca_rclr)$cont$importance[2:3, ]
+```
+
+The three axes hold all the variance of the completed matrix by construction.
+To get more axes, raise `ropt`: the cost of the completion grows with the rank, and only rank 3 has been timed on large tables.
 
 ## How much do the axes leave out?
 

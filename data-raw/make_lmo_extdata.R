@@ -31,6 +31,18 @@ samples <- occ |>
   semi_join(fraction, by = "occurrenceID") |>
   distinct(sample = eventID, date = eventDate, depth = minimumDepthInMeters) |>
   as.data.frame()
+
+measured <- emof |>
+  semi_join(fraction, by = "occurrenceID") |>
+  filter(measurementType %in% c("temperature", "salinity")) |>
+  inner_join(select(occ, occurrenceID, sample = eventID), by = "occurrenceID") |>
+  distinct(sample, measurementType, measurementValue) |>
+  as.data.frame()
+for (type in c("temperature", "salinity")) {
+  one <- measured[measured$measurementType == type, ]
+  samples[[type]] <- as.numeric(one$measurementValue[match(samples$sample, one$sample)])
+}
+
 samples <- samples[samples$sample %in% kept$sample, ]
 samples <- samples[order(samples$date, samples$sample), ]
 

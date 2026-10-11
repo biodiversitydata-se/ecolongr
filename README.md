@@ -24,8 +24,10 @@ Design, scope and open questions are in [`DESIGN.md`](DESIGN.md).
 
 ```r
 # install.packages("remotes")
-remotes::install_github("biodiversitydata-se/ecolongr")
+remotes::install_github("biodiversitydata-se/ecolongr", build_vignettes = TRUE, dependencies = TRUE)
 ```
+
+`build_vignettes = TRUE` builds the vignette, which needs `pandoc`; leave it out without `pandoc`, and read [`vignettes/seasonal-ordination.Rmd`](vignettes/seasonal-ordination.Rmd) on GitHub instead.
 
 The package contains C++ code (Rcpp, with OpenMP if your compiler has it), so it needs a C++ compiler.
 It uses [`duckplyr`](https://duckplyr.tidyverse.org/) for the lazy table operations.
@@ -45,28 +47,32 @@ taxonomy <- read_parquet_duckdb(
   prudence = "stingy"
 )
 
-# Select ASVs, rename to the default columns, standardise and compute distances.
+# Select ASVs, rename to the default columns, make relative abundances and compute
+# Bray-Curtis distances.
 # Nothing is read into R until el_vegdist().
 # `samples` sets the order of d to that of the metadata and includes samples without counts.
 d <- counts |>
   semi_join(taxonomy, by = "asv_id") |>
   transmute(sample, taxon = asv_id, quant = count) |>
-  el_decostand("hellinger") |>
-  el_vegdist("euclidean", samples = metadata$sample)
+  el_decostand("total") |>
+  el_vegdist("bray", samples = metadata$sample)
 
 # d is a dist object: use vegan on it.
+# metaMDS() on a dist has no species scores; giving it the matrix would, but needs the dense table.
 ordination <- vegan::metaMDS(d)
 vegan::adonis2(d ~ treatment, data = metadata)
+vegan::envfit(ordination, metadata[, c("temperature", "salinity")], na.rm = TRUE)
 
-# A PCA of the same table, first five axes.
+# A PCA of the clr of the counts, first five axes.
+# `clr` needs a prevalence filter in practice: see "Filter before `clr`" below.
 pca <- counts |>
   transmute(sample, taxon = asv_id, quant = count) |>
-  el_decostand("rclr") |>
-  el_rda(k = 5)
+  el_rda(k = 5, transform = "clr", pseudocount = "inverse_depth", samples = metadata$sample)
 
 summary(pca)
 plot(pca)
 vegan::scores(pca, display = "sites", choices = 1:2)
+vegan::envfit(pca, metadata[, c("temperature", "salinity")], choices = 1:2, na.rm = TRUE)
 ```
 
 `ecolongr` does not attach `duckplyr`.
@@ -142,16 +148,18 @@ d <- el_vegdist(counts, "aitchison", pseudocount = "inverse_depth")
 
 `metaMDS()` and `adonis2()` only need a `dist`, so use `vegan`'s own on the result of `el_vegdist()`.
 
-`clr` is not a method of `el_decostand()`, because it makes every cell non-zero.
-Use `el_vegdist(method = "aitchison")` or `el_rda(transform = "clr")` on the raw counts instead.
+`clr` is not a method of `el_decostand()`, because it makes every cell non-zero, which a table without zeros cannot hold.
+It is computed from the raw counts inside the two functions that use it.
+`el_vegdist(method = "aitchison")` is the Euclidean distance between clr-transformed samples, which is the Aitchison distance.
+`el_rda(transform = "clr")` is a PCA of the clr, and with all axes its sample distances are the same Aitchison distances.
 The `pseudocount` is in the units of the counts: a positive number, `"inverse_depth"` for `1 / (the sample's total count)`, or a numeric vector named by sample.
 
 Conventions:
 
 - The default column names are `sample`, `taxon` and `quant`.
   Each function has arguments with the same names to point at other columns.
-- Rows with `quant == 0` are ignored.
-- A sample with no non-zero rows cannot be seen in the table.
+- Rows with `quant == 0` are read as absent cells, but their sample still counts: a sample with only such rows is an all-zero sample.
+- A sample with no rows at all cannot be seen in the table.
   Pass `samples = ` with all sample IDs to include them as all-zero samples, as `vegan` does with a zero row.
   Without it, the samples that occur in the table are used, in sorted order.
   Pass `samples = metadata$sample` to `el_vegdist()` and `el_rda()` before using `envfit()`, `adonis2()` or `procrustes()` with the metadata, which pair rows by position.
@@ -164,13 +172,22 @@ Distances and standardisations equal `vegan`'s to about 1e-10, and PCA scores to
 The tests compare every function and option with `vegan` on `varespec` and a synthetic community, including all-zero samples and explicit zero rows.
 
 - **`el_decostand("rclr")` leaves zeros absent.**
-  `vegan`'s `decostand(x, "rclr")` fills them by matrix completion, a global step that also changes the non-zero cells; `el_decostand("rclr")` matches `decostand(x, "rclr", impute = FALSE)`.
+  `vegan`'s `decostand(x, "rclr")` fills the zeros with values from a matrix completion, so every cell becomes non-zero.
+  Like `clr`, that cannot be returned as a table without zeros.
+  The completion is also one global fit over all observed cells, which a lazy table query cannot express.
+  `el_decostand("rclr")` therefore does only the part that fits: the log-ratio of the non-zero cells.
+  The completion also changes the non-zero cells; `el_decostand("rclr")` matches `decostand(x, "rclr", impute = FALSE)`.
   A later step that reads absent cells as 0 puts those taxa at the sample's geometric mean, so Euclidean distance on it is not `vegan`'s `robust.aitchison` when the table has zeros.
-  For that, use `el_vegdist(method = "robust.aitchison")` or `el_rda(transform = "rclr")` on the raw counts: they run the same rank-3 completion as `vegan` on the observed cells only and agree with `vegan` to about 1e-6.
-  They need every sample to have at least one non-zero cell, and `el_rda(transform = "rclr")` returns at most three axes.
+  For that, use `el_vegdist(method = "robust.aitchison")` or `el_rda(transform = "rclr")` on the raw counts: they run the same matrix completion as `vegan`, of rank 3 unless you set `ropt`, on the observed cells only and agree with `vegan` to about 1e-6.
+  They need every sample to have at least one non-zero cell, and `el_rda(transform = "rclr")` returns at most `ropt` axes (three by default, as in `vegan`).
 - **`clr` needs a prevalence filter in practice.**
   On a 414-sample, 60,633-ASV time series with 99% zeros, PC1–PC2 of a `clr` PCA showed the seasonal cycle poorly (seasonal R² 0.28), but as well as Hellinger once ASVs present in fewer than 20% of the samples were removed (0.64).
-  Filter with `duckplyr` verbs before the call, for example `semi_join()` against the ASVs with `n_distinct(sample) >= 0.2 * n_distinct(all samples)`.
+  Filter with `duckplyr` verbs before the call, as in "Filter before `clr`" above: `semi_join()` against the ASVs with `n_distinct(sample) >= 0.2 * n_distinct(all samples)`.
+- **`metaMDS()` on the `dist` has no species scores.**
+  Given a community matrix, `metaMDS()` also computes species scores as weighted averages and applies its own automatic transformations (`autotransform`).
+  That needs the dense matrix, which is what this package avoids.
+  On a `dist` you get the sample scores only: `ordination$species` is `NA` and `scores(ordination, display = "species")` is empty.
+  Transform with `el_decostand()` before `el_vegdist()` instead.
 - **`log` follows `vegan` without the warning:** if any value is not a whole number, everything is first divided by the smallest positive value in the table.
 - **`el_rda()` returns the first `k` axes only.**
   `scores()`, `eigenvals()`, `plot()` and `screeplot()` work.
@@ -181,11 +198,11 @@ The tests compare every function and option with `vegan` on `varespec` and a syn
   A `k` above the rank, `min(number of samples − 1, number of taxa)`, is silently reduced to it, so a very large `k` returns all axes, as a full PCA.
   A `k` close to the rank makes `el_rda()` use the exact solver, which builds the dense samples × taxa matrix.
   Keep `k` small on large tables, where the iterative solver is used.
-  With `transform = "rclr"` there are at most three axes.
+  With `transform = "rclr"` there are at most `ropt` axes, the rank of the completion (default 3, as `vegan`'s `ropt`).
 - **The variance the `k` axes leave out is available.**
   `pca$tot.chi` is the total variance of the whole table, whatever `k` is, so `1 - sum(vegan::eigenvals(pca)) / pca$tot.chi` is the unexplained share.
   Only that sum is known: the eigenvalues of the axes beyond `k` are not.
-  For `transform = "rclr"` the share is 0, because the completed matrix has rank 3.
+  For `transform = "rclr"` the share is 0, because the completed matrix has rank `ropt`, and the axes hold all of it.
 - **`hellinger` writes a temporary Parquet file**, because `duckplyr` cannot compute a square root.
   The file is removed when the R session ends.
 

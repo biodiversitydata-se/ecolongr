@@ -32,7 +32,7 @@ test_that("the sample table covers exactly the samples of the counts and has dat
   counts <- utils::read.delim(gzfile(files$counts), stringsAsFactors = FALSE)
   samples <- utils::read.delim(files$samples, stringsAsFactors = FALSE)
 
-  expect_named(samples, c("sample", "date", "depth"))
+  expect_named(samples, c("sample", "date", "depth", "temperature", "salinity"))
   expect_setequal(samples$sample, counts$sample)
   expect_false(anyDuplicated(samples$sample) > 0)
   dates <- as.Date(samples$date)
@@ -47,4 +47,25 @@ test_that("the samples span the seasons evenly enough for a seasonal analysis", 
   months <- table(factor(format(as.Date(samples$date), "%m"), levels = sprintf("%02d", 1:12)))
 
   expect_true(all(months >= 5))
+})
+
+test_that("temperature is complete and salinity mostly so, both in plausible units for the Baltic Sea", {
+  samples <- utils::read.delim(lmo_files()$samples, stringsAsFactors = FALSE)
+
+  expect_type(samples$temperature, "double")
+  expect_false(anyNA(samples$temperature))
+  expect_true(all(samples$temperature > -2 & samples$temperature < 30))
+  expect_type(samples$salinity, "double")
+  expect_true(all(samples$salinity[!is.na(samples$salinity)] > 3 & samples$salinity[!is.na(samples$salinity)] < 12))
+  expect_gt(sum(is.na(samples$salinity)), 0)
+  expect_lt(mean(is.na(samples$salinity)), 0.1)
+})
+
+test_that("temperature follows the seasons: warmest in summer, coldest in winter", {
+  samples <- utils::read.delim(lmo_files()$samples, stringsAsFactors = FALSE)
+  month <- as.integer(format(as.Date(samples$date), "%m"))
+  by_month <- tapply(samples$temperature, month, mean)
+
+  expect_true(names(which.max(by_month)) %in% c("7", "8"))
+  expect_true(names(which.min(by_month)) %in% c("1", "2", "3"))
 })
