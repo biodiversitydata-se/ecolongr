@@ -140,7 +140,7 @@ double_centre <- function(m) {
   sweep(m, 1, rowMeans(m))
 }
 
-vegan_rclr_imputed <- function(m) {
-  out <- as.matrix(suppressWarnings(vegan::decostand(m, "rclr", impute = TRUE)))
+vegan_rclr_imputed <- function(m, ropt = 3) {
+  out <- as.matrix(suppressWarnings(vegan::decostand(m, "rclr", impute = TRUE, ropt = ropt)))
   matrix(as.numeric(out), nrow(out), ncol(out), dimnames = dimnames(out))
 }

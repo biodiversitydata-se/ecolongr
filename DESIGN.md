@@ -237,13 +237,17 @@ Implemented as `el_decostand()`; the result is a lazy `duckplyr` table and the t
   In a long table the zeros are simply absent rows.
 - `el_decostand("rclr")` leaves zeros absent, so a later step that reads absent cells as 0 puts those taxa at the sample's geometric mean.
   That is not `vegan`'s robust Aitchison distance when zeros are present: `vegdist(method = "robust.aitchison")` is Euclidean distance on `decostand(x, "rclr")` with the default `impute = TRUE` (Martino et al. 2019).
-  That step fills the missing cells by rank-3 matrix completion (OptSpace, 5 iterations) and then centres rows and columns to mean 0, which also changes the non-zero cells.
+  That step fills the missing cells by matrix completion of rank `ropt` (OptSpace, default rank 3, 5 iterations) and then centres rows and columns to mean 0, which also changes the non-zero cells.
   The two agree when the table has no zeros (tested).
   On the synthetic test table (80% zeros) they differ by up to 4.4 where the distances range up to 3.4.
 - The completed version is implemented as `el_vegdist(method = "robust.aitchison")` and `el_rda(transform = "rclr")`, both from raw counts.
   OptSpace runs on the observed cells only (the algorithm, constants and line search follow `vegan::optspace()`, and the result agrees to 1e-14), with Rcpp helpers for the sums over cells.
-  The completed matrix has rank 3: after centring it is `Xc S Yc'`, so distances come from the 3-column factors via a QR of `Yc`, and the PCA from an SVD of a 3 × 3 core.
-  `el_rda` therefore returns at most three axes, `scale = TRUE` is not available, and samples with no non-zero cell are rejected (they have nothing to complete from).
+  The completed matrix has rank `ropt`: after centring it is `Xc S Yc'`, so distances come from the `ropt`-column factors via a QR of `Yc`, and the PCA from an SVD of a `ropt` × `ropt` core.
+  `el_rda` therefore returns at most `ropt` axes, `scale = TRUE` is not available, and samples with no non-zero cell are rejected (they have nothing to complete from).
+- `ropt` is an argument of `el_vegdist()` (for `robust.aitchison`) and `el_rda()` (for `transform = "rclr"`), named and defaulted (3) as in `vegan`, where `decostand(x, "rclr", ropt = )` passes it to `optspace()`.
+  It must be a whole number below the number of samples and of taxa, and giving it with any other method or transform is an error.
+  Tested against `vegan` for ranks 2, 3 and 5.
+  Speed and memory were measured only at rank 3: the cost of each OptSpace iteration grows with the rank, but how much on a large table is not measured.
   On the full LMO series (414 samples, 60,633 ASVs) it takes under two seconds, against 80 seconds for `vegan`'s dense completion, with the same seasonal R² (0.303).
   Measured on sequoia: 5,000 samples and 11.1M cells, `robust.aitchison` 38 s and 1.4 GB, `el_rda` 37 s and 1.7 GB; 20,000 samples and 19.4M cells, 87 s and 2.3 GB, and 72 s and 2.8 GB.
   The 20,000-sample run found an integer overflow in `p * n` (about 1e10), now fixed and covered by a test.

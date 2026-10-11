@@ -10,6 +10,7 @@ el_vegdist(
     "robust.aitchison"),
   binary = FALSE,
   pseudocount = 1,
+  ropt = 3,
   samples = NULL,
   batch_rows = 1e+06,
   threads = NULL,
@@ -31,14 +32,18 @@ allowed only for \code{method = "euclidean"} without \code{binary}, for example 
 the Euclidean distance between clr-transformed samples, computed from the
 counts. \code{"canberra"} is \code{NA}, as in \code{vegan}, between two all-zero samples.
 \code{"robust.aitchison"} is the Euclidean distance on the robust clr with the
-zeros filled by matrix completion (rank 3, as in \code{vegan}). It needs counts,
-and no all-zero samples.}
+zeros filled by matrix completion (rank \code{ropt}, as in \code{vegan}). It needs
+counts, and no all-zero samples.}
 
 \item{binary}{If \code{TRUE}, use presence and absence instead of quantities.}
 
 \item{pseudocount}{For \code{method = "aitchison"} only: added to the counts before
 the clr. A positive number, \code{"inverse_depth"} for \verb{1 / (the sample's total count)}, or a positive numeric vector named by sample. The unit is that of
 the counts, so give raw counts, not relative abundances.}
+
+\item{ropt}{For \code{method = "robust.aitchison"} only: the rank of the matrix
+completion, 3 as in \code{vegan}. A whole number below the number of samples and
+of taxa.}
 
 \item{samples}{Optional vector of all sample IDs, which also sets the order
 of the result. Samples in \code{samples} that are absent from \code{x} are treated as

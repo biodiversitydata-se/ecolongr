@@ -148,3 +148,50 @@ test_that("dimensions whose product exceeds the 32-bit integer range do not over
   expect_true(all(is.finite(fit$Y)))
   expect_true(all(is.finite(fit$S)))
 })
+
+for (ropt in c(2, 5)) {
+  test_that(paste0("robust.aitchison with ropt = ", ropt, " is the Euclidean distance on vegan's rank-", ropt, " completion"), {
+    for (m in fixtures[c("synthetic", "lmo")]) {
+      got <- el_vegdist(long_table(m), method = "robust.aitchison", ropt = ropt)
+
+      expect_equal(as_full_matrix(got), as_full_matrix(stats::dist(vegan_rclr_imputed(m, ropt = ropt))), tolerance = 1e-6)
+    }
+  })
+
+  test_that(paste0("el_rda rclr with ropt = ", ropt, " matches vegan::rda on the rank-", ropt, " completion"), {
+    for (m in fixtures[c("synthetic", "lmo")]) {
+      got <- el_rda(long_table(m), k = ropt, transform = "rclr", ropt = ropt)
+
+      expect_equal(length(vegan::eigenvals(got)), ropt)
+      compare_rda(got, vegan_rclr_imputed(m, ropt = ropt), k = ropt, tolerance = 1e-6)
+    }
+  })
+}
+
+test_that("a different ropt changes the result, and ropt = 3 is the default", {
+  x <- long_table(fixtures$lmo)
+
+  default <- el_vegdist(x, method = "robust.aitchison")
+  expect_equal(as.numeric(el_vegdist(x, method = "robust.aitchison", ropt = 3)), as.numeric(default))
+  expect_gt(max(abs(as.numeric(el_vegdist(x, method = "robust.aitchison", ropt = 5)) - as.numeric(default))), 1e-3)
+  expect_equal(el_rda(x, k = 5, transform = "rclr", ropt = 3)$ecolongr$k, 3)
+})
+
+test_that("el_rda rclr returns at most ropt axes, however large k is", {
+  got <- el_rda(long_table(fixtures$lmo), k = 50, transform = "rclr", ropt = 5)
+
+  expect_equal(length(vegan::eigenvals(got)), 5)
+})
+
+test_that("ropt must be a whole number below the number of samples and taxa, and belongs to rclr only", {
+  x <- long_table(fixtures$synthetic)
+
+  for (bad in list(0, -1, 2.5, NA, "a", c(2, 3), 1000)) {
+    expect_error(el_vegdist(x, method = "robust.aitchison", ropt = bad), "`ropt` must be")
+    expect_error(el_rda(x, transform = "rclr", ropt = bad), "`ropt` must be")
+  }
+  expect_error(el_vegdist(x, method = "bray", ropt = 2), "ropt")
+  expect_error(el_vegdist(x, method = "aitchison", ropt = 2), "ropt")
+  expect_error(el_rda(x, transform = "none", ropt = 2), "ropt")
+  expect_error(el_rda(x, transform = "clr", ropt = 2), "ropt")
+})

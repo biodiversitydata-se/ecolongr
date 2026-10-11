@@ -16,13 +16,16 @@
 #'   the Euclidean distance between clr-transformed samples, computed from the
 #'   counts. `"canberra"` is `NA`, as in `vegan`, between two all-zero samples.
 #'   `"robust.aitchison"` is the Euclidean distance on the robust clr with the
-#'   zeros filled by matrix completion (rank 3, as in `vegan`). It needs counts,
-#'   and no all-zero samples.
+#'   zeros filled by matrix completion (rank `ropt`, as in `vegan`). It needs
+#'   counts, and no all-zero samples.
 #' @param binary If `TRUE`, use presence and absence instead of quantities.
 #' @param pseudocount For `method = "aitchison"` only: added to the counts before
 #'   the clr. A positive number, `"inverse_depth"` for `1 / (the sample's total
 #'   count)`, or a positive numeric vector named by sample. The unit is that of
 #'   the counts, so give raw counts, not relative abundances.
+#' @param ropt For `method = "robust.aitchison"` only: the rank of the matrix
+#'   completion, 3 as in `vegan`. A whole number below the number of samples and
+#'   of taxa.
 #' @param samples Optional vector of all sample IDs, which also sets the order
 #'   of the result. Samples in `samples` that are absent from `x` are treated as
 #'   all zero. Without it, the samples that occur in `x` are used, in
@@ -45,13 +48,16 @@
 #' @return A `dist` object.
 #' @export
 el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean", "aitchison", "manhattan", "canberra", "robust.aitchison"), binary = FALSE,
-                       pseudocount = 1, samples = NULL, batch_rows = 1e6, threads = NULL, memory_limit = NULL,
+                       pseudocount = 1, ropt = 3, samples = NULL, batch_rows = 1e6, threads = NULL, memory_limit = NULL,
                        sample = "sample", taxon = "taxon", quant = "quant") {
   method <- match.arg(method)
   if (method %in% c("aitchison", "robust.aitchison") && binary) {
     stop("`binary` is not available for method = \"", method, "\"")
   }
   if (method == "aitchison") check_pseudocount_form(pseudocount)
+  if (method != "robust.aitchison" && !missing(ropt)) {
+    stop("`ropt` is only used with `method = \"robust.aitchison\"`")
+  }
   if (!is.numeric(batch_rows) || length(batch_rows) != 1 || is.na(batch_rows) || batch_rows < 1) {
     stop("`batch_rows` must be a positive number")
   }
@@ -70,7 +76,7 @@ el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean", "aitchison"
   if (summary$missing > 0) stop("`", quant, "` has missing values")
   if (summary$negative > 0 && (method != "euclidean" || binary)) stop("`", quant, "` has negative values")
   if (method == "robust.aitchison") {
-    fit <- rclr_completion(stream, summary, if (is.null(samples)) NULL else as.character(samples), threads)
+    fit <- rclr_completion(stream, summary, if (is.null(samples)) NULL else as.character(samples), threads, ropt)
     out <- stats::dist(fit$coordinates)
     attr(out, "Labels") <- fit$samples
     attr(out, "method") <- method

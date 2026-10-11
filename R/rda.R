@@ -15,11 +15,13 @@
 #' @param transform `"none"` uses `x` as it is. `"clr"` takes raw counts and
 #'   centred log-ratio transforms them, with every zero cell read as
 #'   `log(pseudocount)`, without making the matrix dense. `"rclr"` takes raw
-#'   counts, fills the zeros of the robust clr by rank-3 matrix completion as in
-#'   `vegan::decostand(x, "rclr")`, and returns at most three axes.
+#'   counts, fills the zeros of the robust clr by matrix completion of rank `ropt`
+#'   as in `vegan::decostand(x, "rclr")`, and returns at most `ropt` axes.
 #' @param pseudocount For `transform = "clr"` only: a positive number, `"inverse_depth"`
 #'   for `1 / (the sample's total count)`, or a positive numeric vector named by
 #'   sample. The unit is that of the counts.
+#' @param ropt For `transform = "rclr"` only: the rank of the matrix completion,
+#'   3 as in `vegan`. A whole number below the number of samples and of taxa.
 #' @param solver `"exact"` uses a dense SVD and is meant for small tables,
 #'   `"irlba"` a sparse truncated SVD, and `"auto"` chooses by size.
 #' @param sample,taxon,quant Names of the columns in `x`.
@@ -28,13 +30,16 @@
 #'   full fitted matrix, such as `predict()` and `anova()`, do not work.
 #' @export
 el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "exact", "irlba"),
-                   transform = c("none", "clr", "rclr"), pseudocount = 1,
+                   transform = c("none", "clr", "rclr"), pseudocount = 1, ropt = 3,
                    sample = "sample", taxon = "taxon", quant = "quant") {
   call <- match.call()
   solver <- match.arg(solver)
   transform <- match.arg(transform)
   if (transform != "clr" && !missing(pseudocount)) {
     stop("`pseudocount` is only used with `transform = \"clr\"`")
+  }
+  if (transform != "rclr" && !missing(ropt)) {
+    stop("`ropt` is only used with `transform = \"rclr\"`")
   }
   if (transform == "rclr" && scale) stop("`scale = TRUE` is not available with `transform = \"rclr\"`")
   if (transform == "clr") check_pseudocount_form(pseudocount)
@@ -53,7 +58,7 @@ el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "
   if (summary$missing > 0) stop("`", quant, "` has missing values")
   if (transform == "rclr") {
     if (summary$negative > 0) stop("`", quant, "` has negative values")
-    fit <- rclr_completion(stream, summary, if (is.null(samples)) NULL else as.character(samples), resolve_threads(NULL))
+    fit <- rclr_completion(stream, summary, if (is.null(samples)) NULL else as.character(samples), resolve_threads(NULL), ropt)
     n <- length(fit$samples)
     k <- min(k, ncol(fit$core))
     sv <- svd(fit$core)

@@ -12,6 +12,7 @@ el_rda(
   solver = c("auto", "exact", "irlba"),
   transform = c("none", "clr", "rclr"),
   pseudocount = 1,
+  ropt = 3,
   sample = "sample",
   taxon = "taxon",
   quant = "quant"
@@ -36,12 +37,15 @@ inertia.}
 \item{transform}{\code{"none"} uses \code{x} as it is. \code{"clr"} takes raw counts and
 centred log-ratio transforms them, with every zero cell read as
 \code{log(pseudocount)}, without making the matrix dense. \code{"rclr"} takes raw
-counts, fills the zeros of the robust clr by rank-3 matrix completion as in
-\code{vegan::decostand(x, "rclr")}, and returns at most three axes.}
+counts, fills the zeros of the robust clr by matrix completion of rank \code{ropt}
+as in \code{vegan::decostand(x, "rclr")}, and returns at most \code{ropt} axes.}
 
 \item{pseudocount}{For \code{transform = "clr"} only: a positive number, \code{"inverse_depth"}
 for \verb{1 / (the sample's total count)}, or a positive numeric vector named by
 sample. The unit is that of the counts.}
+
+\item{ropt}{For \code{transform = "rclr"} only: the rank of the matrix completion,
+3 as in \code{vegan}. A whole number below the number of samples and of taxa.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}.}
 }
