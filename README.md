@@ -1,5 +1,7 @@
 # ecolongr
 
+[![R-CMD-check](https://github.com/biodiversitydata-se/ecolongr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/biodiversitydata-se/ecolongr/actions/workflows/R-CMD-check.yaml)
+
 Community ecology analyses on long tables.
 
 `ecolongr` computes distances, transformations and ordinations from a table with one row per sample and taxon, without the zeros.
