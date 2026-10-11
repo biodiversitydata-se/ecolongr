@@ -12,4 +12,5 @@ First version, for feedback.
 * `pseudocount` for `clr` is a number, `"inverse_depth"` (1 / the sample's total count) or a vector named by sample.
 * A vignette follows the published LMO 16S time series from the Darwin Core archive to ordinations.
 * Not implemented: constrained `rda` with explanatory variables, `predict()` and `fitted()` for `el_rda()` results, and species scores for `metaMDS()` on a `dist`.
-* Tested on Linux only so far.
+* `R CMD check` runs in CI on Linux, macOS and Windows, with the tests and the vignette.
+  The timings in the documentation were measured on Linux only.
