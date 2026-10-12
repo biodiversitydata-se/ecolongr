@@ -101,6 +101,7 @@ nrow(metadata)
 
 ## Colouring by season
 
+The axis labels of a PCA give the percentage of the total variance of the table that the axis holds: the eigenvalue divided by `tot.chi`, not by the sum of the kept eigenvalues.
 We colour the samples by day of year, with a palette that returns to its start, so that a seasonal cycle shows as a ring with the colours in order.
 
 ```{r plot-helper}
@@ -108,7 +109,13 @@ season_colours <- function(day) hcl(h = 360 * day / 366, c = 90, l = 60)
 
 plot_season <- function(ordination, main, ...) {
   sites <- vegan::scores(ordination, display = "sites", choices = 1:2)
-  plot(sites, col = season_colours(metadata$day_of_year), pch = 19, asp = 1, main = main, ...)
+  axes <- colnames(sites)
+  if (inherits(ordination, "rda")) {
+    percent <- 100 * vegan::eigenvals(ordination)[1:2] / ordination$tot.chi
+    axes <- sprintf("%s (%.1f%%)", axes, percent)
+  }
+  plot(sites, col = season_colours(metadata$day_of_year), pch = 19, asp = 1, main = main,
+       xlab = axes[1], ylab = axes[2], ...)
 }
 ```
 
@@ -264,6 +271,18 @@ The total variance of the table is still known, so the share that the other axes
 ```{r unexplained}
 unexplained <- function(pca) 1 - sum(vegan::eigenvals(pca)) / pca$tot.chi
 round(c(hellinger = unexplained(pca_hellinger), clr = unexplained(pca_clr)), 2)
+```
+
+The share of an axis is its eigenvalue divided by the total variance, `tot.chi`, which `summary()` does.
+Dividing by the sum of the kept eigenvalues is wrong.
+Those shares sum to one over the `k` axes whatever `k` is, so they hide what the other axes hold:
+
+```{r share-right-wrong}
+eig <- vegan::eigenvals(pca_clr)
+round(rbind(
+  right = eig / pca_clr$tot.chi,
+  wrong = eig / sum(eig)
+), 3)
 ```
 
 ## Seasonal structure in the distances

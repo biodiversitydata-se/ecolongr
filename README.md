@@ -67,7 +67,7 @@ library(ecolongr)
 
 counts <- read_parquet_duckdb("summary_tables/ampliseq.counts.parquet", prudence = "stingy")
 taxonomy <- read_parquet_duckdb(
-  "summary_tables/ampliseq.taxonomy.DADA2.consolidated_most-specific.parquet",
+  "summary_tables/ampliseq.taxonomy.DADA2.consolidated_score.parquet",
   prudence = "stingy"
 )
 
@@ -95,6 +95,13 @@ pca <- counts |>
 
 summary(pca)
 plot(pca)
+
+# Axis labels with the percentage of the total variance: divide by tot.chi, not by sum(eigenvals).
+percent <- 100 * vegan::eigenvals(pca)[1:2] / pca$tot.chi
+plot(
+  vegan::scores(pca, display = "sites", choices = 1:2),
+  xlab = sprintf("PC1 (%.1f%%)", percent[1]), ylab = sprintf("PC2 (%.1f%%)", percent[2])
+)
 vegan::scores(pca, display = "sites", choices = 1:2)
 vegan::envfit(pca, metadata[, c("temperature", "salinity")], choices = 1:2, na.rm = TRUE)
 ```
@@ -223,9 +230,17 @@ The tests compare every function and option with `vegan` on `varespec` and a syn
   A `k` close to the rank makes `el_rda()` use the exact solver, which builds the dense samples × taxa matrix.
   Keep `k` small on large tables, where the iterative solver is used.
   With `transform = "rclr"` there are at most `ropt` axes, the rank of the completion (default 3, as `vegan`'s `ropt`).
-- **The variance the `k` axes leave out is available.**
+- **The variance the `k` axes leave out is known, and `el_rda()` reports it in a message.**
   `pca$tot.chi` is the total variance of the whole table, whatever `k` is, so `1 - sum(vegan::eigenvals(pca)) / pca$tot.chi` is the unexplained share.
   Only that sum is known: the eigenvalues of the axes beyond `k` are not.
+  Silence the message with `suppressMessages()` or `options(ecolongr.quiet = TRUE)`.
+- **Divide an eigenvalue by `tot.chi`, never by the sum of the eigenvalues.**
+  `vegan::eigenvals(pca) / sum(vegan::eigenvals(pca))` sums to one over the `k` axes whatever `k` is, and so hides the variance that the other axes hold.
+  `vegan::eigenvals(pca) / pca$tot.chi` and `summary(pca)` give the share of the whole.
+- **Some plotting packages divide by the sum of the eigenvalues and so mislabel the axes.**
+  `ggordiplots` (`ord_labels()`, used by its ordination plot functions) and `microViz` (`ord_plot()`) put a percentage in the axis label that is the eigenvalue divided by the sum of the kept eigenvalues, so the `k` labels sum to 100%.
+  Labels from `eigenvals(pca) / pca$tot.chi`, as above, are right; replace the axis titles of such a plot with them, for example with `ggplot2::xlab()`.
+  `ggvegan::autoplot()` does not print percentages and works on the result.
   For `transform = "rclr"` the share is 0, because the completed matrix has rank `ropt`, and the axes hold all of it.
 - **`hellinger` writes a temporary Parquet file**, because `duckplyr` cannot compute a square root.
   The file is removed when the R session ends.

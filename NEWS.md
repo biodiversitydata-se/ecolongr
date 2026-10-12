@@ -8,6 +8,9 @@ First version, for feedback.
   `clr` is computed from the counts inside `el_vegdist(method = "aitchison")` and `el_rda(transform = "clr")`, because it makes every cell non-zero.
 * `el_rda()` returns an unconstrained PCA of the table, of its clr or of its completed robust clr, with the first `k` axes, as a `vegan` `rda` object.
   `scores()`, `eigenvals()`, `summary()`, `plot()`, `biplot()`, `envfit()` and `procrustes()` work on it, and `tot.chi` gives the variance the `k` axes leave out.
+* `el_rda()` prints a message with the share of the total variance that the `k` axes hold and the share it leaves out.
+  Silence it with `suppressMessages()` or `options(ecolongr.quiet = TRUE)`.
+  The documentation explains why an eigenvalue is divided by `tot.chi` and not by the sum of the kept eigenvalues.
 * The completion rank of the robust clr is `ropt`, 3 as in `vegan`, in `el_vegdist()` and `el_rda()`.
 * `pseudocount` for `clr` is a number, `"inverse_depth"` (1 / the sample's total count) or a vector named by sample.
 * A vignette follows the published LMO 16S time series from the Darwin Core archive to ordinations.

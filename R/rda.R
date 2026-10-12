@@ -7,6 +7,8 @@
 #' @param x A data frame or lazy `duckplyr` table with one row per non-zero
 #'   sample and taxon. Negative values are allowed.
 #' @param k Number of axes to return, at most the rank, `min(n - 1, taxa)`.
+#'   The axes beyond `k` are not computed, so the share of the total variance
+#'   that the `k` axes hold depends on `k`. The function reports it in a message.
 #' @param scale If `TRUE`, divide every taxon by its standard deviation, as in
 #'   `vegan::rda(scale = TRUE)`.
 #' @param samples Optional vector of all sample IDs. Samples in `samples` that
@@ -28,6 +30,33 @@
 #' @return An object of class `rda` and `cca` with the first `k` axes. Use
 #'   [vegan::scores()] and [vegan::eigenvals()] on it. Functions that need the
 #'   full fitted matrix, such as `predict()` and `anova()`, do not work.
+#'
+#'   `tot.chi` is the total variance of the whole table, whatever `k` is. The
+#'   share of the variance that an axis holds is its eigenvalue divided by
+#'   `tot.chi`, which `summary()` does. Dividing by the sum of the `k` kept
+#'   eigenvalues is wrong: those shares always sum to one and hide the variance
+#'   that the other axes hold.
+#'
+#'   A message gives the share held by the `k` axes and the share left out.
+#'   `suppressMessages()` or `options(ecolongr.quiet = TRUE)` silences it.
+#' @examples
+#' data(varespec, package = "vegan")
+#' x <- data.frame(
+#'   sample = rep(rownames(varespec), ncol(varespec)),
+#'   taxon = rep(colnames(varespec), each = nrow(varespec)),
+#'   quant = unlist(varespec, use.names = FALSE)
+#' )
+#' x <- x[x$quant > 0, ]
+#' pca <- el_rda(x, k = 3)
+#'
+#' # Right: the share of the whole variance. The three do not sum to one.
+#' eig <- vegan::eigenvals(pca)
+#' c(eig / pca$tot.chi)
+#' summary(pca)$cont$importance["Proportion Explained", ]
+#' 1 - sum(eig) / pca$tot.chi
+#'
+#' # Wrong: the three always sum to one, whatever the axes leave out.
+#' c(eig / sum(eig))
 #' @export
 el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "exact", "irlba"),
                    transform = c("none", "clr", "rclr"), pseudocount = 1, ropt = 3,
@@ -69,7 +98,7 @@ el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "
     dimnames(vv) <- list(fit$taxa, axes)
     tot_chi <- sum(sv$d^2) / (n - 1)
     colsum <- stats::setNames(sqrt(rowSums((fit$Qb %*% t(fit$core))^2) / (n - 1)), fit$taxa)
-    return(structure(
+    return(report_axes(structure(
       list(colsum = colsum, tot.chi = tot_chi, Ybar = NULL, method = "rda", call = call,
            pCCA = NULL, CCA = NULL,
            CA = list(eig = stats::setNames(sv$d[seq_len(k)]^2 / (n - 1), axes), poseig = NULL, u = u, v = vv,
@@ -77,7 +106,7 @@ el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "
            inertia = "variance",
            ecolongr = list(solver = "optspace", n = n, taxa = length(fit$taxa), k = k)),
       class = c("ecolongr_rda", "rda", "cca")
-    ))
+    )))
   }
   if (transform == "clr") {
     if (summary$negative > 0) stop("`", quant, "` has negative values")
@@ -154,14 +183,26 @@ el_rda <- function(x, k = 5, scale = FALSE, samples = NULL, solver = c("auto", "
   eig <- stats::setNames(usv$d^2 / (n - 1), axes)
   names(colsum) <- taxa
 
-  structure(
+  report_axes(structure(
     list(colsum = colsum, tot.chi = tot_chi, Ybar = NULL, method = "rda", call = call,
          pCCA = NULL, CCA = NULL,
          CA = list(eig = eig, poseig = NULL, u = u, v = vv, rank = k, tot.chi = tot_chi),
          inertia = "variance",
          ecolongr = list(solver = solver, n = n, taxa = p, k = k)),
     class = c("ecolongr_rda", "rda", "cca")
+  ))
+}
+
+report_axes <- function(fit) {
+  if (isTRUE(getOption("ecolongr.quiet", FALSE))) return(fit)
+  k <- length(fit$CA$eig)
+  held <- min(sum(fit$CA$eig) / fit$tot.chi, 1)
+  message(
+    if (k == 1) "`el_rda()`: the first axis holds " else sprintf("`el_rda()`: the first %d axes hold ", k),
+    sprintf("%.1f%% of the total variance and %.1f%% is left out. ", 100 * held, 100 * (1 - held)),
+    "Use `summary()` for the share of each axis."
   )
+  fit
 }
 
 #' @exportS3Method vegan::eigenvals

@@ -72,3 +72,14 @@ test_that("a taxa-by-events sparse matrix, as asvoccur returns, converts to a lo
   expect_equal(nrow(long), sum(m > 0))
   expect_equal(as_full_matrix(el_vegdist(long, "bray")), as_full_matrix(vegan::vegdist(m, "bray")), tolerance = 1e-10)
 })
+
+test_that("axis labels with the percentage of the whole variance equal summary()'s proportions, for k below the rank", {
+  m <- present_taxa(lmo$matrix)
+  pca <- el_rda(lmo$long, k = 3, transform = "clr", pseudocount = 1)
+  percent <- 100 * vegan::eigenvals(pca)[1:2] / pca$tot.chi
+  ref <- 100 * summary(vegan::rda(clr_reference(lmo$matrix[, colSums(lmo$matrix) > 0], 1)))$cont$importance["Proportion Explained", 1:2]
+
+  expect_equal(as.numeric(percent), unname(ref), tolerance = 1e-6)
+  expect_lt(sum(percent), 99)
+  expect_match(sprintf("PC1 (%.1f%%)", percent[1]), "^PC1 \\(\\d+\\.\\d%\\)$")
+})

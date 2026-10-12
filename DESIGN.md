@@ -305,6 +305,9 @@ Implemented as `el_rda()`.
 - *n* is the number of samples in the full set.
   All-zero samples listed in `samples` count in *n*, the column means and the total inertia, as zero rows do in `vegan`.
 - Only the first *k* axes are returned, where `vegan` returns all.
+  The share of the total variance that they hold depends on *k*, so `el_rda()` reports it in a message after the fit, as `metaMDS()` reports its stress.
+  `options(ecolongr.quiet = TRUE)` turns it off.
+  The documentation says to divide an eigenvalue by `tot.chi`, not by the sum of the *k* eigenvalues, which sums to one and hides the rest.
 - The result has class `ecolongr_rda`, `rda` and `cca`, so `scores()` (scalings 1, 2 and 3), `eigenvals()`, `summary()`, `plot()`, `biplot()`, `screeplot()`, `envfit()` and `procrustes()` work (tested against `vegan`).
   `predict()` and `fitted()` need the full matrix and give an error.
   `anova()` gives `vegan`'s table for an unconstrained ordination, which has no constrained component.

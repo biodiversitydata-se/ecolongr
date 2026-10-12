@@ -22,7 +22,9 @@ el_rda(
 \item{x}{A data frame or lazy \code{duckplyr} table with one row per non-zero
 sample and taxon. Negative values are allowed.}
 
-\item{k}{Number of axes to return, at most the rank, \code{min(n - 1, taxa)}.}
+\item{k}{Number of axes to return, at most the rank, \code{min(n - 1, taxa)}.
+The axes beyond \code{k} are not computed, so the share of the total variance
+that the \code{k} axes hold depends on \code{k}. The function reports it in a message.}
 
 \item{scale}{If \code{TRUE}, divide every taxon by its standard deviation, as in
 \code{vegan::rda(scale = TRUE)}.}
@@ -53,9 +55,37 @@ sample. The unit is that of the counts.}
 An object of class \code{rda} and \code{cca} with the first \code{k} axes. Use
 \code{\link[vegan:scores]{vegan::scores()}} and \code{\link[vegan:eigenvals]{vegan::eigenvals()}} on it. Functions that need the
 full fitted matrix, such as \code{predict()} and \code{anova()}, do not work.
+
+\code{tot.chi} is the total variance of the whole table, whatever \code{k} is. The
+share of the variance that an axis holds is its eigenvalue divided by
+\code{tot.chi}, which \code{summary()} does. Dividing by the sum of the \code{k} kept
+eigenvalues is wrong: those shares always sum to one and hide the variance
+that the other axes hold.
+
+A message gives the share held by the \code{k} axes and the share left out.
+\code{suppressMessages()} or \code{options(ecolongr.quiet = TRUE)} silences it.
 }
 \description{
 Unconstrained \code{\link[vegan:rda]{vegan::rda()}} on a table without zeros. The matrix is
 centred implicitly, so it is never made dense, and only the first \code{k} axes
 are returned. Compose it with \code{\link[=el_decostand]{el_decostand()}} for a transformation.
+}
+\examples{
+data(varespec, package = "vegan")
+x <- data.frame(
+  sample = rep(rownames(varespec), ncol(varespec)),
+  taxon = rep(colnames(varespec), each = nrow(varespec)),
+  quant = unlist(varespec, use.names = FALSE)
+)
+x <- x[x$quant > 0, ]
+pca <- el_rda(x, k = 3)
+
+# Right: the share of the whole variance. The three do not sum to one.
+eig <- vegan::eigenvals(pca)
+c(eig / pca$tot.chi)
+summary(pca)$cont$importance["Proportion Explained", ]
+1 - sum(eig) / pca$tot.chi
+
+# Wrong: the three always sum to one, whatever the axes leave out.
+c(eig / sum(eig))
 }

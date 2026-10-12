@@ -186,3 +186,64 @@ test_that("the three axes of the completed rclr explain all of its inertia", {
 
   expect_equal(unexplained(got), 0, tolerance = 1e-10)
 })
+
+test_that("the option ecolongr.quiet silences the report and unset it is off", {
+  m <- present_taxa(fixtures$synthetic)
+
+  withr::local_options(ecolongr.quiet = TRUE)
+  expect_no_message(el_rda(long_table(m), k = 3, solver = "exact"), message = "left out")
+  withr::local_options(ecolongr.quiet = NULL)
+  expect_message(el_rda(long_table(m), k = 3, solver = "exact"), "left out")
+})
+
+test_that("el_rda reports the shares held and left out by the k axes, equal to vegan's", {
+  withr::local_options(ecolongr.quiet = FALSE)
+  m <- present_taxa(fixtures$synthetic)
+  ref <- vegan::rda(m)
+  held <- sum(vegan::eigenvals(ref)[1:3]) / ref$tot.chi
+  expect_gt(1 - held, 0.01)
+
+  expect_message(el_rda(long_table(m), k = 3, solver = "exact"), sprintf("%.1f%% of the total variance", 100 * held), fixed = TRUE)
+  expect_message(el_rda(long_table(m), k = 3, solver = "exact"), sprintf("%.1f%% is left out", 100 * (1 - held)), fixed = TRUE)
+})
+
+test_that("the message names the number of axes returned, not the number asked for", {
+  withr::local_options(ecolongr.quiet = FALSE)
+  m <- fixtures$synthetic[1:5, ]
+
+  expect_message(el_rda(long_table(m), k = 50, solver = "exact"), "first 4 axes")
+})
+
+test_that("the message says nothing is left out when the axes hold everything", {
+  withr::local_options(ecolongr.quiet = FALSE)
+  expect_message(el_rda(long_table(fixtures$varespec), k = 3, transform = "rclr"), "0.0% is left out", fixed = TRUE)
+})
+
+test_that("the message is a message, so suppressMessages silences it and the result is unchanged", {
+  m <- present_taxa(fixtures$synthetic)
+  quiet <- suppressMessages(el_rda(long_table(m), k = 3, solver = "exact"))
+
+  expect_no_warning(suppressMessages(el_rda(long_table(m), k = 3, solver = "exact")))
+  expect_equal(quiet$tot.chi, vegan::rda(m)$tot.chi, tolerance = 1e-10)
+})
+
+test_that("dividing the kept eigenvalues by their sum always gives 1, dividing by tot.chi gives the share of the whole", {
+  m <- present_taxa(fixtures$synthetic)
+  ref <- vegan::rda(m)
+  got <- suppressMessages(el_rda(long_table(m), k = 3, solver = "exact"))
+  eig <- unname(vegan::eigenvals(got))
+
+  expect_equal(sum(eig / sum(eig)), 1)
+  expect_lt(sum(eig / got$tot.chi), 0.99)
+  expect_equal(as.numeric(eig / got$tot.chi), unname(vegan::eigenvals(ref)[1:3] / ref$tot.chi), tolerance = 1e-8)
+})
+
+test_that("summary() gives vegan's proportion of the whole for the kept axes, not of their sum", {
+  m <- present_taxa(fixtures$synthetic)
+  ref_importance <- summary(vegan::rda(m))$cont$importance
+  got <- suppressMessages(el_rda(long_table(m), k = 3, solver = "exact"))
+  got_importance <- summary(got)$cont$importance
+
+  expect_equal(unname(got_importance["Proportion Explained", 1:3]), unname(ref_importance["Proportion Explained", 1:3]), tolerance = 1e-8)
+  expect_lt(sum(got_importance["Proportion Explained", 1:3]), 0.99)
+})
