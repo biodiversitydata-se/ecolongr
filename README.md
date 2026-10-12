@@ -249,7 +249,11 @@ The tests compare every function and option with `vegan` on `varespec` and a syn
 
 `el_vegdist()` runs the lazy query in DuckDB, writes it to a temporary Parquet file sorted by taxon, and reads it back in batches of whole taxa.
 A compiled kernel adds up the pairs into one vector in the order of a `dist` object.
-The memory is the result (one number per pair of samples, so it grows with the square of the number of samples), one batch, and DuckDB's sort buffer.
+The memory has three parts:
+
+- the result, one number per pair of samples, which grows with the square of the number of samples;
+- one batch of rows;
+- the memory DuckDB uses for the sort, which `memory_limit` caps (250 MB by default).
 
 Measured on a 24-thread desktop under load, on synthetic tables where a few taxa occur in nearly every sample:
 
