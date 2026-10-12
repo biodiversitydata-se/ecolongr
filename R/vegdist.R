@@ -23,6 +23,9 @@
 #'   the clr. A positive number, `"inverse_depth"` for `1 / (the sample's total
 #'   count)`, or a positive numeric vector named by sample. The unit is that of
 #'   the counts, so give raw counts, not relative abundances.
+#'   `"inverse_depth"` uses the totals of the table passed in, so after filtering
+#'   taxa it is not the depth of the whole library: compute the depths first and
+#'   pass them as a named vector.
 #' @param ropt For `method = "robust.aitchison"` only: the rank of the matrix
 #'   completion, 3 as in `vegan`. A whole number below the number of samples and
 #'   of taxa.

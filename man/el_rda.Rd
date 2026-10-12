@@ -44,7 +44,10 @@ as in \code{vegan::decostand(x, "rclr")}, and returns at most \code{ropt} axes.}
 
 \item{pseudocount}{For \code{transform = "clr"} only: a positive number, \code{"inverse_depth"}
 for \verb{1 / (the sample's total count)}, or a positive numeric vector named by
-sample. The unit is that of the counts.}
+sample. The unit is that of the counts.
+\code{"inverse_depth"} uses the totals of the table passed in, so after filtering
+taxa it is not the depth of the whole library: compute the depths first and
+pass them as a named vector.}
 
 \item{ropt}{For \code{transform = "rclr"} only: the rank of the matrix completion,
 3 as in \code{vegan}. A whole number below the number of samples and of taxa.}

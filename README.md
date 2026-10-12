@@ -131,19 +131,24 @@ deep <- counts |>
   filter(depth >= 5000) |>
   select(sample)
 
+# The detection limit of a sample is set by its whole library, so take the depth before filtering.
+depth <- counts |>
+  summarise(total = sum(count, na.rm = TRUE), .by = sample) |>
+  as.data.frame()
+pseudocount <- setNames(1 / depth$total, depth$sample)
+
 d <- counts |>
   semi_join(common, by = "asv_id") |>
   semi_join(deep, by = "sample") |>
   transmute(sample, taxon = asv_id, quant = count) |>
-  el_vegdist("aitchison", pseudocount = "inverse_depth")
+  el_vegdist("aitchison", pseudocount = pseudocount)
 ```
 
 Two details:
 
-- `pseudocount = "inverse_depth"` uses the totals of the table it is given, which here is the filtered one.
-  To use each sample's depth from before filtering, compute it first and pass it by name:
-  `depth <- counts |> summarise(total = sum(count, na.rm = TRUE), .by = sample) |> as.data.frame()`, then
-  `pseudocount = setNames(1 / depth$total, depth$sample)`.
+- `pseudocount = "inverse_depth"` uses the totals of the table it is given.
+  After the filters above those totals are smaller than the libraries, by different amounts in different samples, so the pseudocounts depend on the filter.
+  Pass the depth from before filtering by name, as above, unless the table you give is the whole library.
 - `duckplyr` translates few R functions.
   `filter(.by = )` is not available (use `summarise(.by = )` and a join as above), `sum()` needs `na.rm = TRUE`, and a scalar with names, such as the result of `quantile()`, must go through `unname()`.
 
@@ -184,6 +189,7 @@ It is computed from the raw counts inside the two functions that use it.
 `el_vegdist(method = "aitchison")` is the Euclidean distance between clr-transformed samples, which is the Aitchison distance.
 `el_rda(transform = "clr")` is a PCA of the clr, and with all axes its sample distances are the same Aitchison distances.
 The `pseudocount` is in the units of the counts: a positive number, `"inverse_depth"` for `1 / (the sample's total count)`, or a numeric vector named by sample.
+`"inverse_depth"` uses the totals of the table you pass, so on a filtered table pass the depths from before filtering as a named vector (see "Filter before `clr`").
 
 Conventions:
 

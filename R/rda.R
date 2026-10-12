@@ -22,6 +22,9 @@
 #' @param pseudocount For `transform = "clr"` only: a positive number, `"inverse_depth"`
 #'   for `1 / (the sample's total count)`, or a positive numeric vector named by
 #'   sample. The unit is that of the counts.
+#'   `"inverse_depth"` uses the totals of the table passed in, so after filtering
+#'   taxa it is not the depth of the whole library: compute the depths first and
+#'   pass them as a named vector.
 #' @param ropt For `transform = "rclr"` only: the rank of the matrix completion,
 #'   3 as in `vegan`. A whole number below the number of samples and of taxa.
 #' @param solver `"exact"` uses a dense SVD and is meant for small tables,

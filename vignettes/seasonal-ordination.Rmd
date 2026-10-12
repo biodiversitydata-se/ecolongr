@@ -178,8 +178,9 @@ The colours follow each other around a ring, one lap per year, so the seasonal c
 
 The Aitchison distance is the Euclidean distance on the centred log-ratio (clr) of the counts.
 Zeros need a pseudocount.
-`pseudocount = "inverse_depth"` adds `1 / (the sample's reads)` to the counts of each sample, so that a shallow sample, with its higher detection limit, gets a larger pseudocount.
+A pseudocount of `1 / (the sample's reads)` in each sample lets a shallow sample, with its higher detection limit, get a larger pseudocount.
 Give the raw counts: the pseudocount is in count units.
+`pseudocount = "inverse_depth"` takes the reads from the table it is given, so we compute the depths from the whole table first and pass them by name, because we filter the ASVs below.
 
 `clr` makes every cell non-zero, so it is not a method of `el_decostand()`.
 It is computed from the counts inside the two functions that use it, and the dense table is never built.
@@ -190,6 +191,11 @@ We keep the ASVs present in at least 20% of the samples:
 
 ```{r clr-filter}
 n_samples <- nrow(metadata)
+
+depth <- counts |>
+  summarise(total = sum(quant, na.rm = TRUE), .by = sample) |>
+  as.data.frame()
+pseudocount <- setNames(1 / depth$total, depth$sample)
 
 common <- counts |>
   summarise(prevalence = n_distinct(sample), .by = taxon) |>
@@ -203,10 +209,10 @@ counts_common <- counts |> semi_join(common, by = "taxon")
 
 ```{r clr}
 d_aitchison <- counts_common |>
-  el_vegdist("aitchison", pseudocount = "inverse_depth", samples = metadata$sample)
+  el_vegdist("aitchison", pseudocount = pseudocount, samples = metadata$sample)
 
 pca_clr <- counts_common |>
-  el_rda(k = 5, transform = "clr", pseudocount = "inverse_depth", samples = metadata$sample)
+  el_rda(k = 5, transform = "clr", pseudocount = pseudocount, samples = metadata$sample)
 
 plot_season(pca_clr, "clr, ASVs in at least 20% of the samples")
 summary(pca_clr)$cont$importance[2:3, 1:3]
@@ -218,7 +224,7 @@ For comparison, the same PCA with all the ASVs of the bundled table (those in at
 
 ```{r clr-all}
 pca_clr_all <- counts |>
-  el_rda(k = 5, transform = "clr", pseudocount = "inverse_depth", samples = metadata$sample)
+  el_rda(k = 5, transform = "clr", pseudocount = pseudocount, samples = metadata$sample)
 
 plot_season(pca_clr_all, "clr, ASVs in at least 5% of the samples")
 ```
