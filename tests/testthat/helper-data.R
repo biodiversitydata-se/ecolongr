@@ -144,3 +144,11 @@ vegan_rclr_imputed <- function(m, ropt = 3) {
   out <- as.matrix(suppressWarnings(vegan::decostand(m, "rclr", impute = TRUE, ropt = ropt)))
   matrix(as.numeric(out), nrow(out), ncol(out), dimnames = dimnames(out))
 }
+
+many_taxa_table <- function(n_samples = 95L, n_taxa = 4500L, seed = 1) {
+  set.seed(seed)
+  per_taxon <- sample(2:60, n_taxa, replace = TRUE)
+  taxon <- rep(sprintf("t%04d", seq_len(n_taxa)), per_taxon)
+  sample_id <- unlist(lapply(per_taxon, function(k) sample.int(n_samples, k)))
+  data.frame(sample = sprintf("s%03d", sample_id), taxon = taxon, quant = rexp(length(taxon)) * 100)
+}

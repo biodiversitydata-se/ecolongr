@@ -1,5 +1,10 @@
 # ecolongr (development version)
 
+* Fixed `el_vegdist()` giving wrong distances, differing between runs, when `threads` was above 1 and the table had more than about 120,000 rows.
+  DuckDB wrote the table sorted by taxon in parallel without keeping the order, so a taxon could be split in two and the pairs between its halves were lost.
+  All methods were affected; `el_rda()` was not, because it does not depend on the order.
+  The sorted table is now checked as it is read, so a wrong order is an error and not a wrong result.
+
 # ecolongr 0.1.0
 
 First version, for feedback.

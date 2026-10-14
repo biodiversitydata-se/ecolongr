@@ -15,7 +15,6 @@ open_taxon_stream <- function(x, binary = FALSE, memory_limit = "250MB", threads
   DBI::dbExecute(con, paste("SET memory_limit =", DBI::dbQuoteString(con, memory_limit)))
   DBI::dbExecute(con, sprintf("SET threads = %d", min(as.integer(threads), 4L)))
   DBI::dbExecute(con, paste("SET temp_directory =", DBI::dbQuoteString(con, spill)))
-  DBI::dbExecute(con, "SET preserve_insertion_order = false")
   DBI::dbExecute(con, paste(
     "CREATE VIEW raw AS SELECT sample, taxon, CAST(quant AS DOUBLE) AS quant FROM read_parquet(", DBI::dbQuoteString(con, path), ")"
   ))
@@ -78,6 +77,7 @@ stream_batches <- function(stream, samples, batch_rows, fun) {
 
   emit <- function(v, from, to) {
     i <- from:to
+    if (is.unsorted(v$taxon[i])) stop("internal error: the sorted table came back out of taxon order", call. = FALSE)
     fun(data.frame(sample = v$sample[i], taxon = v$taxon[i], quant = v$quant[i]))
   }
 
