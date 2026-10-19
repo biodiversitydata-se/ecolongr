@@ -297,9 +297,11 @@ Bray-Curtis on synthetic tables made with `bench/gen.R`, one run each, memory is
 |---|---|---|---|
 | 500 samples, 41,090 taxa | 0.4 s, 270 MB | 47 s, 530 MB | 61 s, 1.1 GB |
 | 2,000 samples, 158,708 taxa | 3.1 s, 390 MB | more than 33 min, at least 4.1 GB | more than 70 min, at least 4.7 GB |
+| 3,000 samples, 235,740 taxa | 5.7 s, 480 MB | not run | not run |
 
 `ecolongr` ran on one thread, as `vegan` and `mia` do.
-The two slow runs on the larger table were stopped by hand, so their memory is what they held at that point.
+The two slow runs on the 2,000-sample table were stopped by hand, so their memory is what they held at that point.
+The 3,000-sample table was run only with `ecolongr`: scaling the 500-sample time with the square of the samples and the number of taxa, `vegan` would need about 2.5 hours.
 The timings of `vegan` and `mia` varied by a factor of two between runs on a machine under load.
 The distances from `ecolongr` and `mia` differ by at most 1e-16.
 
