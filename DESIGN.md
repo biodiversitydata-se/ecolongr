@@ -1,7 +1,5 @@
 # ecolongr: design
 
-Status: draft for discussion, nothing implemented.
-
 ## Problem
 
 `vegan` needs the full taxa × samples matrix in memory, dense.
