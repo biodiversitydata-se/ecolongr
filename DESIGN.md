@@ -11,15 +11,15 @@ This package would compute the common `vegan` analyses directly from such a tabl
 
 ## Goal
 
-Re-implement a small subset of `vegan`, taking a long table (or a sparse matrix built from one) as input, with results that agree with `vegan` to numerical tolerance.
+Re-implement a small subset of `vegan`, taking a long table as input, with results that agree with `vegan` to numerical tolerance.
 `vegan` is the reference implementation and the test oracle.
 
 ## Non-goals
 
 - Replacing `vegan`.
   Anything that only needs a distance matrix is left to `vegan`.
-- Constrained ordination, in the first versions.
-- Matrix completion (`decostand(impute = TRUE)`).
+- Constrained ordination (`rda` with explanatory variables), for now.
+  See "`rda` with explanatory variables: postponed".
 - Plotting, including `ggplot2` interfaces.
   Result objects keep the `vegan` classes, so existing tools that plot `vegan` objects (`ggvegan`, `ggordiplots`, `microViz`) should work on them.
   Which of these are maintained and cover `rda` and `dist` has not been checked.
@@ -30,13 +30,15 @@ The taxa axis is the large one.
 After a sample × sample distance exists, that axis is gone.
 So methods split by whether they need the taxa × samples matrix:
 
-| vegan method | Needs the matrix? | Plan |
+| vegan method | Needs the matrix? | In `ecolongr` |
 |---|---|---|
-| `vegdist` | yes | implement |
-| `decostand` | yes | implement the methods that need only non-zero cells |
-| `rda`, unconstrained (PCA) | yes | implement with truncated SVD |
-| `metaMDS` | no, takes a `dist` | use `vegan` on our `dist` |
-| `adonis2` | no, takes a `dist` | use `vegan` on our `dist` |
+| `vegdist` | yes | `el_vegdist()`, a compiled kernel over a table sorted by taxon |
+| `decostand` | yes | `el_decostand()` for the methods that need only non-zero cells; `clr` and the completed `rclr` are computed inside `el_vegdist()` and `el_rda()` |
+| `rda`, unconstrained (PCA) | yes | `el_rda()`, truncated SVD of an implicitly centred sparse matrix |
+| `metaMDS` | no, takes a `dist` | `vegan` on our `dist` |
+| `adonis2` | no, takes a `dist` | `vegan` on our `dist` |
+| `dbrda`, `capscale` | no, take a `dist` | `vegan` on our `dist` |
+| `envfit` | no, takes an ordination | `vegan` on an `el_rda()` or `metaMDS()` result |
 
 `metaMDS` wraps `monoMDS`, a nonmetric optimiser with random starts and local minima, so a re-implementation would only agree approximately.
 `adonis2` makes an n × n copy internally, which only matters at very large n.
@@ -44,15 +46,12 @@ Both can be revisited if profiling says otherwise.
 
 ## Input
 
-The `duckplyr` direction is below; the exact input classes are open.
-Candidates:
+The input is a long table with columns `sample`, `taxon` and `quant`, as a data frame or a lazy `duckplyr` table.
+A sparse matrix is not accepted; the README shows how to turn a `dgCMatrix` into a long table with `Matrix::summary()`.
 
-1. A long table with columns `sample`, `taxon`, `quant`, as a data frame, an Arrow dataset or a DuckDB table.
-2. A `dgCMatrix` (taxa × samples) built from (1) after selection.
-
-A sparse matrix is the natural in-memory format for the linear algebra (`irlba`, `RSpectra`, C++ kernels).
+A sparse matrix is the natural in-memory format for the linear algebra (`irlba`, C++ kernels).
 The problem to avoid is the dense conversion, not the sparse matrix.
-The intended flow is therefore: query the long table, select, build a sparse matrix only where an algorithm needs one.
+The flow is therefore: query the long table, select, build a sparse matrix only where an algorithm needs one (`el_rda()` and the matrix completion).
 
 ## Data sources
 
@@ -145,11 +144,12 @@ A scratch test on `vegan::varespec` as a long table:
 - Bray–Curtis built from that pipeline matched `vegan::vegdist` to about 5e-16 over 66 sample pairs.
 - `rclr` as `mutate(log(count) - mean(log(count), na.rm = TRUE), .by = sample)` runs on a stingy frame.
   Without `na.rm = TRUE` it falls back.
-  An earlier version of this document said the version without `na.rm` ran lazily; that was judged from the result class and was wrong.
-  Its output has not yet been compared with `vegan`.
-  The same formula in base R matches `decostand(..., "rclr", impute = FALSE)` exactly on the non-zero cells.
+  `el_decostand("rclr")` is tested against `vegan::decostand(..., "rclr", impute = FALSE)` on the non-zero cells.
 - `mutate(relab = count / sum(count, na.rm = TRUE), .by = sample)` and `transmute()` run on a stingy frame; `group_by()` and `sum(count)` without `na.rm` do not.
 - `mutate(z = rev(count), .by = sample)` fell back to `dplyr` and materialized.
+
+`duckplyr` translates few functions.
+Checked on 2026-10-10: `log`, `log10`, `abs`, `round`, `as.integer`, arithmetic and comparisons work; `sqrt`, `exp`, `floor`, `^`, `pmin`, `ifelse`, `cross_join` and `sum()` without `na.rm` inside a window do not.
 
 ### Cost
 
@@ -212,11 +212,11 @@ Decision: the prefix `el_`, for example `el_vegdist`, `el_decostand`, `el_rda`.
 
 Result objects keep the `vegan` classes (`dist`, and `rda` where feasible), so that `vegan::metaMDS`, `vegan::adonis2`, `scores()` and `plot()` work on them.
 
-## Scope of the first version
+## What is implemented
 
 ### `vegdist`
 
-- Indices: `bray`, `jaccard`, `euclidean`, `manhattan`, `canberra` and `aitchison`.
+- Indices: `bray`, `jaccard`, `euclidean`, `manhattan`, `canberra`, `aitchison` and `robust.aitchison` (see `decostand`).
   Manhattan is `Σx_i + Σx_j − 2 Σ min(x_i, x_j)` and uses the same kernel as Bray–Curtis.
   Canberra follows `vegan`: terms where both samples are zero are dropped and the sum is divided by the number of taxa in either sample, so it is `NA` between two all-zero samples.
   It needs the number of shared taxa as well, which the kernel counts in the same pass.
@@ -288,10 +288,6 @@ On the LMO series, judged by how well PC1–PC2 show the seasonal cycle (see the
 The pseudocount mattered little, smaller ones doing slightly better.
 `clr` should be used on a prevalence-filtered table.
 
-
-`duckplyr` translates few functions.
-Checked on 2026-10-10: `log`, `log10`, `abs`, `round`, `as.integer`, arithmetic and comparisons work; `sqrt`, `exp`, `floor`, `^`, `pmin`, `ifelse`, `cross_join` and `sum()` without `na.rm` inside a window do not.
-
 ### `rda`, unconstrained
 
 Implemented as `el_rda()`.
@@ -312,8 +308,8 @@ Implemented as `el_rda()`.
 - The extra class exists for one `eigenvals()` method that sets the `sumev` attribute to the total inertia.
   Without it `summary()` takes the proportions of the *k* kept eigenvalues instead of the whole.
 - Axis signs are arbitrary.
-- Input is a transformed long table, composed with `el_decostand()`; `clr` with a pseudocount is not implemented.
-  It fills the matrix, but only with one constant per sample, so it is a sparse matrix plus a rank-1 term and fits the implicit method.
+- Input is a transformed long table, composed with `el_decostand()`, or raw counts with `transform = "clr"` or `"rclr"`.
+  The `clr` fills the matrix, but only with one constant per sample, so it is a sparse matrix plus a rank-1 term and fits the implicit method.
 
 Measured on sequoia, 5 axes, with 12 or fewer threads for the sort and `irlba` single-threaded:
 
@@ -380,6 +376,8 @@ They are indicative, not a specification: wall times depend on how busy the mach
 
 This is the main deliverable.
 
+- `vegan` is in `Suggests`: the tests use it, and `eigenvals()` for `ecolongr_rda` is registered only when it is loaded.
+  The package itself never calls it.
 - Fixtures: `vegan::varespec`, `vegan::dune`, and a synthetic sparse community generated with a fixed seed.
 - Compare with `testthat` at a tolerance of about 1e-10 for distances and transforms.
 - Compare ordinations up to sign: eigenvalues, scores and proportion explained.
@@ -391,7 +389,7 @@ This is the main deliverable.
   - samples with identical profiles
   - `binary = TRUE`
 - Check that tests can fail: for each, a plausible wrong implementation (for example Bray–Curtis on relative abundances, or PCA without centring) must produce a failing test.
-- Memory benchmark against `vegan` on a large synthetic dataset, reporting peak memory and run time.
+- Memory benchmark against `vegan` and `mia` on synthetic datasets, reporting peak memory and run time: see "Cost" and the README.
 
 ## Existing packages to check first
 
@@ -401,16 +399,19 @@ Only the CRAN descriptions have been read so far, not the function lists.
   Not yet checked whether it has Bray–Curtis.
 - `rbiom`: beta diversity, including UniFrac, on BIOM data.
 - `irlba`, `RSpectra`: sparse truncated SVD.
+- `mia` 1.20.0 (Bioconductor), read on 2026-10-19: no sparse path.
+  `getDissimilarity()` calls `vegan::vegdist()` on the dense transposed assay, and `transformAssay()` calls `vegan::decostand()`.
+  Its PCA is `scater::runPCA()` on the transformed, dense assay.
+  The README has timings against `vegan` and `mia`.
 
 If one of them already computes a measure correctly on sparse input, a thin wrapper plus the `vegan` comparison tests may be enough for that measure.
 
 ## Open questions
 
-- Input contract: long table, sparse matrix, or both.
-- Which lazy-table classes to accept: `duckplyr_df` and `duckdb_tibble` only, or also `tbl_lazy` from `dbplyr`, Arrow datasets and plain data frames.
-- Whether to depend on `vegan`.
-  It is needed for tests, and for returning compatible objects (`vegan::rda` class) if we choose to.
+- Whether to also accept a sparse matrix directly, or leave the conversion to the user.
+- Whether to also accept `tbl_lazy` from `dbplyr` and Arrow datasets.
+  Data frames and `duckplyr` tables are accepted; no test covers the others.
 - Whether omitting `samples` should only be documented, or also give a message that all-zero samples cannot be detected.
 - Whether to add `rda` with explanatory variables (see above).
 - How the cost of the matrix completion grows with `ropt` above 3 on large tables, which has not been measured.
-- Which indices beyond Bray–Curtis, Jaccard and Euclidean are worth the effort.
+- Which of the other `vegan::vegdist` indices are worth the effort.
