@@ -288,6 +288,21 @@ On the 5,000-sample table this took the peak of a `rclr` plus Euclidean pipeline
 
 Make the first table `prudence = "stingy"`, as in the example, to have `duckplyr` raise an error where it would otherwise silently fall back to `dplyr` and copy the whole table into R.
 
+### Compared with `vegan` and `mia`
+
+[`mia`](https://bioconductor.org/packages/mia) calls `vegan::vegdist()` on the dense matrix for Bray-Curtis, so it takes as long as `vegan` does.
+Bray-Curtis on synthetic tables made with `bench/gen.R`, one run each, memory is the peak of the whole R process:
+
+| table | `ecolongr` | `vegan` | `mia` |
+|---|---|---|---|
+| 500 samples, 41,090 taxa | 0.4 s, 270 MB | 47 s, 530 MB | 61 s, 1.1 GB |
+| 2,000 samples, 158,708 taxa | 3.1 s, 390 MB | more than 33 min, at least 4.1 GB | more than 70 min, at least 4.7 GB |
+
+`ecolongr` ran on one thread, as `vegan` and `mia` do.
+The two slow runs on the larger table were stopped by hand, so their memory is what they held at that point.
+The timings of `vegan` and `mia` varied by a factor of two between runs on a machine under load.
+The distances from `ecolongr` and `mia` differ by at most 1e-16.
+
 ## Development
 
 - [`DESIGN.md`](DESIGN.md) has the scope, decisions, measurements and open questions.
