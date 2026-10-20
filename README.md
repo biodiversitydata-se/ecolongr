@@ -40,7 +40,7 @@ A data frame in R is accepted as well, but it is already in memory.
 
 ## Status
 
-Early development, version 0.1.0.
+Early development, version 0.1.1.
 The functions below are tested against `vegan`, but names and arguments may still change.
 Design, scope and open questions are in [`DESIGN.md`](DESIGN.md).
 
