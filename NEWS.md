@@ -1,3 +1,5 @@
+# ecolongr (development version)
+
 # ecolongr 0.1.1
 
 * Fixed `el_vegdist()` giving wrong distances, differing between runs, when `threads` was above 1 and the table had more than about 120,000 rows.

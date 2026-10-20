@@ -1,7 +1,7 @@
 Package: ecolongr
 Type: Package
 Title: Community Ecology Analyses on Long Tables
-Version: 0.1.1
+Version: 0.1.1.9000
 Authors@R: person("Daniel", "Lundin", email = "matricaria.suaveolens@gmail.com", role = c("aut", "cre"))
 Description: Distances, transformations and ordination for community data kept
     as long tables without zeros, computed lazily with 'duckplyr' so that the
