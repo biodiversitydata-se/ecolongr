@@ -37,7 +37,7 @@ The Bioconductor package [`mia`](https://bioconductor.org/packages/mia) calls `v
 
 Early development, version 0.1.1.
 The functions are tested against `vegan`, but names and arguments may still change.
-Design, scope and open questions are in [`DESIGN.md`](DESIGN.md).
+Design, scope and open questions are in [`DESIGN.md`](https://github.com/biodiversitydata-se/ecolongr/blob/main/DESIGN.md).
 
 ## Installation
 
@@ -299,8 +299,8 @@ On the 5,000-sample table this took the peak of a `total` plus Euclidean pipelin
 
 ## Development
 
-- [`DESIGN.md`](DESIGN.md) has the scope, decisions, measurements and open questions.
-- [`AGENTS.md`](AGENTS.md) has the working rules: tests first, `vegan` as the reference.
+- [`DESIGN.md`](https://github.com/biodiversitydata-se/ecolongr/blob/main/DESIGN.md) has the scope, decisions, measurements and open questions.
+- [`AGENTS.md`](https://github.com/biodiversitydata-se/ecolongr/blob/main/AGENTS.md) has the working rules: tests first, `vegan` as the reference.
 - `bench/` has scripts for the large synthetic tables.
   Benchmark with an installed package, not `devtools::load_all()`, which compiles without optimisation.
 - `devtools::test()` runs the tests.
