@@ -35,6 +35,7 @@ So methods split by whether they need the taxa × samples matrix:
 | `vegdist` | yes | `el_vegdist()`, a compiled kernel over a table sorted by taxon |
 | `rarefy`, `drarefy` | no, one sample at a time | `el_rarefy()`, `el_drarefy()`, lazy apart from the distinct (total, count) pairs |
 | `rrarefy` | no, one sample at a time | `el_rrarefy()`, materializes the input; drawn in C++ |
+| `diversity`, `specnumber` | no, one sample at a time | `el_diversity()`, `el_specnumber()`, one grouped aggregate in DuckDB; only one number per sample is read into R |
 | `decostand` | yes | `el_decostand()` for the methods that need only non-zero cells; `clr` and the completed `rclr` are computed inside `el_vegdist()` and `el_rda()` |
 | `rda`, unconstrained (PCA) | yes | `el_rda()`, truncated SVD of an implicitly centred sparse matrix |
 | `metaMDS` | no, takes a `dist` | `vegan` on our `dist` |
@@ -248,7 +249,7 @@ Samples with a total at or below `depth` are returned unchanged, with a warning 
 - The tests instead draw 4,000 replicates of a small table and compare, per cell, the mean and the variance with `vegan`'s and with the exact hypergeometric values.
   The variance matters: sampling with replacement has the right mean and a variance too large by the finite population correction.
 - Not implemented: a `depth` per sample.
-  Alpha diversity indices (`diversity()`, `specnumber()`) are not implemented; `el_rarefy()` gives expected richness at equal depth.
+  Alpha diversity is `el_diversity()` and `el_specnumber()`; `el_rarefy()` gives expected richness at equal depth.
 
 ### `drarefy` and `rarefy`
 
@@ -264,6 +265,28 @@ They are also compared with the mean over 4,000 `el_rrarefy()` replicates.
   DuckDB has no `log1p`, so the stable form could not be written in SQL.
 - Not implemented: `se = TRUE`, which needs a sum over pairs of taxa, and several depths at once (call the function once per depth).
   `rarecurve()` is not planned, since it is a plot.
+
+### `diversity` and `specnumber`
+
+Implemented as `el_diversity(x, index, base)` and `el_specnumber(x)`: one value per sample, as a numeric vector named by sample.
+The tests compare them with `vegan::diversity()` and `vegan::specnumber()` at 1e-10 on `varespec`, `BCI` and the synthetic community.
+
+- Lazy: a window `quant / sum(quant, na.rm = TRUE)` per sample, then one `summarise(.by = sample)`.
+  Only the per-sample result is read into R.
+  Memory is the result plus what DuckDB uses for the grouped aggregate, so it does not grow with the number of taxa.
+- Shannon is `-sum(p * log(p)) / log(base)`.
+  `duckplyr` translates `log()` but not a two-argument `log(x, base)`, so the base is divided out in R on the per-sample result.
+  Simpson is `1 - sum(p * p)` and inverse Simpson `1 / sum(p * p)`, with `p * p` because `^` is not translated.
+- Quantities need not be whole numbers.
+  `vegan` divides by the sample total, so proportions, and any common scale, give the same result.
+  Negative or missing quantities are errors that name the column; `check = FALSE` skips the query that looks for them.
+- Rows with `quant == 0` are dropped.
+- All-zero samples: `vegan` gives an all-zero row Shannon 0, Simpson 1, inverse Simpson `Inf` and richness 0 (the 0/0 proportions are `NaN` and are dropped from the sums, which `vegan::diversity()` then reads as an empty sum).
+  A long table cannot show such a sample, so it is absent from the result, and no entry is made up for it.
+  The only difference from `vegan` is therefore the missing entries; the documentation lists the values to fill in.
+  There is no `samples` argument here: a caller who has the full set of sample IDs can fill in the missing ones.
+- Not implemented: `groups`, `MARGIN` and `equalize.groups` of `diversity()`, and `renyi()`, `fisher.alpha()`, `estimateR()`, `specpool()` and evenness.
+  Pielou's evenness is `el_diversity() / log(el_specnumber())`, which the caller can compute.
 
 ### `decostand`
 

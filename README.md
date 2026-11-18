@@ -181,6 +181,7 @@ d <- el_vegdist(counts, "aitchison", pseudocount = "inverse_depth")
 | `el_vegdist()` | `bray`, `jaccard`, `euclidean`, `manhattan`, `canberra`, `aitchison` and `robust.aitchison` dissimilarities, optionally `binary`; returns a `dist` | `vegdist()` |
 | `el_decostand()` | `total`, `hellinger`, `log`, `pa` and `rclr`, as a lazy long table | `decostand()` |
 | `el_drarefy()`, `el_rarefy()` | expected presence of each taxon, and expected richness, in a subsample of `depth`; no `se` | `drarefy()`, `rarefy()` |
+| `el_diversity()`, `el_specnumber()` | Shannon, Simpson and inverse Simpson index, and richness, of each sample, as a named vector; samples with no non-zero row are absent | `diversity()`, `specnumber()` |
 | `el_rrarefy()` | random subsample of each sample to a common `depth`, as a table; materializes | `rrarefy()` |
 | `el_rda()` | unconstrained PCA of the table, of its clr or of its completed rclr, the first `k` axes; returns an `rda` object | `rda()` |
 
