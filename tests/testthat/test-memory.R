@@ -39,3 +39,45 @@ test_that("el_vegdist on a skewed table with 73M sample pairs adds under 400 MB"
   expect_length(extra, 1)
   expect_lt(extra, 400)
 })
+
+alpha_peak_extra_mb <- function(n_samples, n_taxa, n_draws) {
+  pkg <- system.file(package = "ecolongr")
+  script <- tempfile(fileext = ".R")
+  writeLines(sprintf('
+    suppressMessages(if (dir.exists(file.path("%s", "Meta"))) library(ecolongr) else pkgload::load_all("%s", quiet = TRUE))
+    set.seed(1)
+    d <- unique(data.frame(sample = sprintf("s%%05d", sample.int(%d, %d, TRUE)),
+                           taxon = sprintf("t%%06d", sample.int(%d, %d, TRUE))))
+    d$quant <- rpois(nrow(d), 5) + 1
+    path <- tempfile(fileext = ".parquet")
+    con <- DBI::dbConnect(duckdb::duckdb()); DBI::dbWriteTable(con, "d", d)
+    DBI::dbExecute(con, sprintf("COPY d TO \'%%s\' (FORMAT PARQUET)", path)); DBI::dbDisconnect(con, shutdown = TRUE)
+    rm(d, con); invisible(gc())
+    kb <- function(field) as.numeric(sub("[^0-9]*([0-9]+).*", "\\\\1", grep(paste0("^", field), readLines("/proc/self/status"), value = TRUE)))
+    duckplyr::db_exec("SET threads = 4")
+    writeLines("5", "/proc/self/clear_refs")
+    before <- kb("VmRSS")
+    x <- duckplyr::read_parquet_duckdb(path)
+    for (index in c("shannon", "simpson", "invsimpson")) r <- el_diversity(x, index, check = FALSE)
+    r <- el_specnumber(x, check = FALSE)
+    cat("EXTRA_MB", (kb("VmHWM") - before) / 1024, "\\n")
+  ', pkg, pkg, n_samples, n_draws, n_taxa, n_draws), script)
+  out <- suppressWarnings(system2(
+    file.path(R.home("bin"), "Rscript"), script, stdout = TRUE, stderr = FALSE,
+    env = paste0("R_LIBS=", paste(.libPaths(), collapse = ":"))
+  ))
+  as.numeric(sub("EXTRA_MB ", "", grep("^EXTRA_MB", out, value = TRUE)))
+}
+
+# A window `quant / sum(quant) OVER (PARTITION BY sample)` buffers the whole
+# table, so an el_diversity() written with one fails this.
+test_that("el_diversity and el_specnumber on a table of 5.4M rows add under 200 MB", {
+  skip_on_cran()
+  skip_if_not(file.exists("/proc/self/clear_refs"), "needs Linux /proc")
+  skip_if_not_installed("pkgload")
+
+  extra <- alpha_peak_extra_mb(n_samples = 1000, n_taxa = 30000, n_draws = 6000000)
+
+  expect_length(extra, 1)
+  expect_lt(extra, 200)
+})

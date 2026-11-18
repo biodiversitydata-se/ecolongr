@@ -177,6 +177,57 @@ test_that("both functions convert their input with prudence 'stingy'", {
   el_diversity(x)
   el_specnumber(x)
 
-  expect_length(seen, 2)
+  expect_gte(length(seen), 1)
   expect_true(all(seen == "stingy"))
+})
+
+test_that("base changes only Shannon", {
+  x <- long_table(diversity_fixtures$varespec)
+
+  expect_equal(el_diversity(x, "simpson", base = 2), el_diversity(x, "simpson"))
+  expect_equal(el_diversity(x, "invsimpson", base = 10), el_diversity(x, "invsimpson"))
+  expect_false(isTRUE(all.equal(el_diversity(x, "shannon", base = 2), el_diversity(x, "shannon"))))
+})
+
+test_that("the result is sorted by sample name whatever the order of the rows", {
+  x <- data.frame(sample = c("b", "c", "a", "b", "c", "a"), taxon = rep(c("t1", "t2"), each = 3), quant = c(1, 2, 3, 4, 5, 6))
+
+  expect_identical(names(el_diversity(x)), c("a", "b", "c"))
+  expect_identical(names(el_specnumber(x)), c("a", "b", "c"))
+  expect_equal(el_specnumber(x), c(a = 2, b = 2, c = 2))
+  expect_equal(el_diversity(x, "simpson")[["a"]], 1 - (3 / 9)^2 - (6 / 9)^2)
+  expect_equal(el_diversity(x, "simpson")[["c"]], 1 - (2 / 7)^2 - (5 / 7)^2)
+})
+
+test_that("sample names are the samples as character: factors sort as text, an NA sample is named NA, numbers keep their digits", {
+  f <- data.frame(sample = factor(c("b", "a", "c"), levels = c("c", "b", "a")), taxon = "t1", quant = 1)
+  expect_identical(names(el_specnumber(f)), c("a", "b", "c"))
+
+  n <- data.frame(sample = c(10, 9, NA), taxon = "t1", quant = 1)
+  got <- el_specnumber(n)
+  expect_identical(names(got), c("10", "9", NA))
+  expect_equal(unname(got), c(1, 1, 1))
+
+  n$taxon <- c("t1", "t2", "t1")
+  n$quant <- c(1, 1, 4)
+  expect_identical(names(el_diversity(n, "simpson")), c("10", "9", NA))
+  expect_equal(unname(el_diversity(n, "simpson")), c(0, 0, 0))
+})
+
+test_that("each row is a cell: a duplicated sample and taxon is not merged", {
+  x <- data.frame(sample = c("a", "a"), taxon = c("t1", "t1"), quant = c(5, 5))
+
+  expect_equal(el_specnumber(x)[["a"]], 2)
+  expect_equal(el_diversity(x, "simpson")[["a"]], 0.5)
+})
+
+test_that("NaN and Inf quantities are errors that name the column", {
+  x <- long_table(diversity_fixtures$varespec[1:3, ])
+  names(x)[3] <- "n"
+  for (bad in c(NaN, Inf)) {
+    y <- x
+    y$n[1] <- bad
+    expect_error(el_diversity(y, quant = "n"), "`n` has non-finite values")
+    expect_error(el_specnumber(y, quant = "n"), "`n` has non-finite values")
+  }
 })

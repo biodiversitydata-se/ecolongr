@@ -31,11 +31,11 @@ sample and taxon. Rows with \code{quant == 0} are dropped.}
 
 \item{base}{Base of the logarithm for \code{"shannon"}; ignored by the others.}
 
-\item{check}{If \code{TRUE}, run one query to stop on negative or missing
-quantities. Use \code{FALSE} to stay entirely lazy.}
+\item{check}{If \code{TRUE}, run one query to stop on negative, missing or
+non-finite (NaN, Inf) quantities. A sample total above about 1e308 is not
+checked. Use \code{FALSE} to skip the query.}
 
-\item{sample, taxon, quant}{Names of the columns in \code{x}. The result has only
-these three columns, with the same names.}
+\item{sample, taxon, quant}{Names of the columns in \code{x}.}
 }
 \value{
 A numeric vector with one value per sample, named by sample and
@@ -43,8 +43,10 @@ sorted by name.
 }
 \description{
 Counterparts of \code{\link[vegan:diversity]{vegan::diversity()}} and \code{\link[vegan:specnumber]{vegan::specnumber()}} for a long
-table without zeros. Each is one grouped aggregate in DuckDB, and only the
-result, one number per sample, is read into R.
+table without zeros. The query runs in DuckDB and only the result, one number
+per sample, is read into R; no taxa by samples matrix is built.
+\code{el_diversity()} computes the sample totals, joins each total back onto its
+rows and takes one grouped sum. \code{el_specnumber()} is one grouped count.
 }
 \details{
 \itemize{
@@ -53,13 +55,25 @@ result, one number per sample, is read into R.
 index \code{1 / sum(p * p)}, where \code{p} is the quantity divided by the sample
 total. As in \code{vegan}, quantities need not be whole numbers, and a common
 scale does not change the result, so proportions are accepted.
-\item \code{el_specnumber()}: the number of taxa with a quantity above zero.
+\item \code{el_specnumber()}: the number of rows with a quantity above zero in each
+sample.
 }
+
+The table must have one row per sample and taxon. Rows are not merged, so a
+sample and taxon that occur twice count as two taxa.
 
 Rows with \code{quant == 0} are dropped. A sample with no non-zero row cannot be
 told from a sample that is not in the table, so it is absent from the result.
 \code{vegan} returns for an all-zero row Shannon 0, Simpson 1, inverse Simpson
 \code{Inf} and richness 0; add these entries yourself if you need them.
+
+The names of the result are the samples as character, sorted as text: factor
+samples are not in level order, numeric samples sort as \code{"10" < "9"}, and an
+\code{NA} sample is named \code{NA} and comes last.
+
+The sums are not compensated, so a sample with millions of taxa can differ
+from \code{vegan} in the last digits (about 2e-11 relative with 1e7 equally common
+taxa), and which digits can vary between runs with several threads.
 
 Not implemented: \code{groups}, \code{MARGIN} and \code{equalize.groups} of \code{diversity()},
 and \code{renyi()}, \code{fisher.alpha()}, \code{estimateR()}, \code{specpool()} and evenness.
