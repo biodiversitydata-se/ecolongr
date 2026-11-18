@@ -1,3 +1,5 @@
+# ecolongr (development version)
+
 # ecolongr 0.2.0
 
 Alpha diversity: richness, diversity indices and rarefaction, tested against `vegan`.

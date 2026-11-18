@@ -1,7 +1,7 @@
 Package: ecolongr
 Type: Package
 Title: Community Ecology Analyses on Long Tables
-Version: 0.2.0
+Version: 0.2.0.9000
 URL: https://biodiversitydata-se.github.io/ecolongr/, https://github.com/biodiversitydata-se/ecolongr
 BugReports: https://github.com/biodiversitydata-se/ecolongr/issues
 Authors@R: person("Daniel", "Lundin", email = "matricaria.suaveolens@gmail.com", role = c("aut", "cre"))
