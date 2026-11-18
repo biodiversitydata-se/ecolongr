@@ -180,6 +180,7 @@ d <- el_vegdist(counts, "aitchison", pseudocount = "inverse_depth")
 |---|---|---|
 | `el_vegdist()` | `bray`, `jaccard`, `euclidean`, `manhattan`, `canberra`, `aitchison` and `robust.aitchison` dissimilarities, optionally `binary`; returns a `dist` | `vegdist()` |
 | `el_decostand()` | `total`, `hellinger`, `log`, `pa` and `rclr`, as a lazy long table | `decostand()` |
+| `el_rrarefy()` | random subsample of each sample to a common `depth`, as a table; materializes | `rrarefy()` |
 | `el_rda()` | unconstrained PCA of the table, of its clr or of its completed rclr, the first `k` axes; returns an `rda` object | `rda()` |
 
 `metaMDS()` and `adonis2()` only need a `dist`, so use `vegan`'s own on the result of `el_vegdist()`.

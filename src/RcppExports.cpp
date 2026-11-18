@@ -92,6 +92,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rarefy_runs
+NumericVector rarefy_runs(NumericVector quant, IntegerVector start, double depth);
+RcppExport SEXP _ecolongr_rarefy_runs(SEXP quantSEXP, SEXP startSEXP, SEXP depthSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type quant(quantSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type start(startSEXP);
+    Rcpp::traits::input_parameter< double >::type depth(depthSEXP);
+    rcpp_result_gen = Rcpp::wrap(rarefy_runs(quant, start, depth));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ecolongr_accumulate_pairs", (DL_FUNC) &_ecolongr_accumulate_pairs, 9},
@@ -99,6 +112,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ecolongr_cell_fitted", (DL_FUNC) &_ecolongr_cell_fitted, 5},
     {"_ecolongr_cell_multiply", (DL_FUNC) &_ecolongr_cell_multiply, 6},
     {"_ecolongr_cell_gram", (DL_FUNC) &_ecolongr_cell_gram, 5},
+    {"_ecolongr_rarefy_runs", (DL_FUNC) &_ecolongr_rarefy_runs, 3},
     {NULL, NULL, 0}
 };
 

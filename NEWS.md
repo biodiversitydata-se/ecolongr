@@ -1,5 +1,9 @@
 # ecolongr (development version)
 
+* New `el_rrarefy()`, the counterpart of `vegan::rrarefy()`: a random subsample of each sample to a common depth.
+  It draws from the same distribution as `vegan` but not the same random numbers, so a seed does not give `vegan`'s result; the tests compare means and variances over many replicates with `vegan` and with the exact values.
+  The table is read into R.
+
 # ecolongr 0.1.1
 
 * Fixed `el_vegdist()` giving wrong distances, differing between runs, when `threads` was above 1 and the table had more than about 120,000 rows.

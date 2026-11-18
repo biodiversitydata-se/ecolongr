@@ -1,0 +1,128 @@
+rarefy_fixture <- function() {
+  matrix(c(1, 2, 3, 4, 10, 0,
+           1, 5, 0, 9, 15, 0,
+           1, 1, 2, 3, 5, 0),
+         nrow = 3, byrow = TRUE,
+         dimnames = list(c("a", "b", "c"), paste0("t", 1:6)))
+}
+
+replicated <- function(m, reps) {
+  long <- long_table(m)
+  rows <- long[rep(seq_len(nrow(long)), times = reps), ]
+  rows$sample <- paste(rows$sample, rep(seq_len(reps), each = nrow(long)), sep = "_")
+  rows
+}
+
+cell_moments <- function(got, m, reps) {
+  key <- rep(rownames(m), each = ncol(m))
+  full <- matrix(0, nrow(m) * reps, ncol(m), dimnames = list(NULL, colnames(m)))
+  parts <- strsplit(got$sample, "_", fixed = TRUE)
+  row <- (as.integer(vapply(parts, `[`, "", 2)) - 1L) * nrow(m) + match(vapply(parts, `[`, "", 1), rownames(m))
+  full[cbind(row, match(got$taxon, colnames(m)))] <- got$quant
+  sample_of_row <- rep(rownames(m), times = reps)
+  list(
+    mean = t(sapply(rownames(m), function(s) colMeans(full[sample_of_row == s, , drop = FALSE]))),
+    var = t(sapply(rownames(m), function(s) apply(full[sample_of_row == s, , drop = FALSE], 2, stats::var)))
+  )
+}
+
+hypergeometric_moments <- function(m, depth) {
+  N <- rowSums(m)
+  p <- m / N
+  list(mean = depth * p, var = depth * p * (1 - p) * (N - depth) / (N - 1))
+}
+
+test_that("every sample is rarefied to exactly the depth, using only counts it had", {
+  m <- rarefy_fixture()
+  set.seed(1)
+  got <- as.data.frame(el_rrarefy(long_table(m), depth = 11))
+
+  expect_equal(c(tapply(got$quant, got$sample, sum)), c(a = 11, b = 11, c = 11))
+  expect_true(all(got$quant >= 1))
+  expect_equal(got$quant, round(got$quant))
+  expect_true(all(got$quant <= m[cbind(match(got$sample, rownames(m)), match(got$taxon, colnames(m)))]))
+  expect_false(any(got$taxon == "t6"))
+})
+
+test_that("rarefied counts have the hypergeometric mean and variance, as in vegan::rrarefy", {
+  m <- rarefy_fixture()
+  depth <- 11
+  reps <- 4000
+  exact <- hypergeometric_moments(m, depth)
+
+  set.seed(2)
+  ours <- cell_moments(as.data.frame(el_rrarefy(replicated(m, reps), depth = depth)), m, reps)
+  set.seed(3)
+  theirs_matrix <- vegan::rrarefy(m[rep(rownames(m), times = reps), ], depth)
+  sample_of_row <- rep(rownames(m), times = reps)
+  theirs <- list(
+    mean = t(sapply(rownames(m), function(s) colMeans(theirs_matrix[sample_of_row == s, , drop = FALSE]))),
+    var = t(sapply(rownames(m), function(s) apply(theirs_matrix[sample_of_row == s, , drop = FALSE], 2, stats::var)))
+  )
+
+  present <- m > 0
+  se <- sqrt(exact$var / reps)
+  expect_true(all(abs(ours$mean - exact$mean)[present] < 5 * se[present]))
+  expect_true(all(abs(theirs$mean - exact$mean)[present] < 5 * se[present]))
+  expect_true(all(abs(ours$mean - theirs$mean)[present] < 5 * sqrt(2) * se[present]))
+  expect_true(all(abs(ours$var / exact$var - 1)[present] < 0.2))
+  expect_true(all(abs(theirs$var / exact$var - 1)[present] < 0.2))
+  expect_true(all(abs(ours$var / theirs$var - 1)[present] < 0.2))
+})
+
+test_that("samples with a total at or below the depth are returned unchanged", {
+  m <- rarefy_fixture()
+  m["c", ] <- c(1, 1, 2, 3, 5, 0) # total 12
+
+  expect_warning(got <- as.data.frame(el_rrarefy(long_table(m), depth = 12)), NA)
+  expect_equal(got[got$sample == "c", c("taxon", "quant")][order(got$taxon[got$sample == "c"]), ],
+               long_table(m)[long_table(m)$sample == "c", c("taxon", "quant")],
+               ignore_attr = TRUE)
+  expect_equal(sum(got$quant[got$sample == "a"]), 12)
+
+  expect_warning(got <- as.data.frame(el_rrarefy(long_table(m), depth = 15)), "not rarefied")
+  expect_equal(sum(got$quant[got$sample == "c"]), 12)
+  expect_equal(sum(got$quant[got$sample == "a"]), 15)
+})
+
+test_that("the same seed gives the same result and another seed another", {
+  x <- long_table(rarefy_fixture())
+  set.seed(7)
+  one <- as.data.frame(el_rrarefy(x, depth = 11))
+  set.seed(7)
+  two <- as.data.frame(el_rrarefy(x, depth = 11))
+  set.seed(8)
+  three <- as.data.frame(el_rrarefy(x, depth = 11))
+
+  expect_equal(one, two)
+  expect_false(isTRUE(all.equal(one, three)))
+})
+
+test_that("non-integer counts and a bad depth are errors", {
+  x <- long_table(rarefy_fixture())
+  y <- x
+  y$quant[1] <- 1.5
+
+  expect_error(el_rrarefy(y, depth = 5), "integer")
+  expect_error(el_rrarefy(x, depth = 0), "depth")
+  expect_error(el_rrarefy(x, depth = c(5, 6)), "depth")
+  expect_error(el_rrarefy(x, depth = NA), "depth")
+  expect_error(el_rrarefy(x, depth = 5.5), "depth")
+})
+
+test_that("column names are taken from the arguments and kept in the result", {
+  x <- long_table(rarefy_fixture())
+  names(x) <- c("site", "species", "n")
+  got <- as.data.frame(el_rrarefy(x, depth = 11, sample = "site", taxon = "species", quant = "n"))
+
+  expect_named(got, c("site", "species", "n"))
+  expect_equal(sum(got$n[got$site == "a"]), 11)
+})
+
+test_that("a lazy duckplyr table is accepted and the result is a duckplyr table", {
+  x <- duckplyr::as_duckdb_tibble(long_table(rarefy_fixture()), prudence = "stingy")
+  got <- el_rrarefy(x, depth = 11)
+
+  expect_s3_class(got, "duckplyr_df")
+  expect_equal(sum(as.data.frame(got)$quant), 33)
+})

@@ -3,6 +3,7 @@
 S3method(vegan::eigenvals,ecolongr_rda)
 export(el_decostand)
 export(el_rda)
+export(el_rrarefy)
 export(el_vegdist)
 importClassesFrom(Matrix,dgCMatrix)
 importFrom(Rcpp,sourceCpp)

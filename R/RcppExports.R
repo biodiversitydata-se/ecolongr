@@ -21,3 +21,7 @@ cell_gram <- function(X, Y, i, j, threads = 1L) {
     .Call(`_ecolongr_cell_gram`, X, Y, i, j, threads)
 }
 
+rarefy_runs <- function(quant, start, depth) {
+    .Call(`_ecolongr_rarefy_runs`, quant, start, depth)
+}
+

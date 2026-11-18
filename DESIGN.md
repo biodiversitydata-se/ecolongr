@@ -231,6 +231,21 @@ Result objects keep the `vegan` classes (`dist`, and `rda` where feasible), so t
   - Euclidean between a zero sample and another is the norm of the other.
   - Omitting such a sample changes the result, not only the dimensions of the `dist`.
 
+### `rrarefy`
+
+Implemented as `el_rrarefy(x, depth)`: a random subsample, without replacement, of `depth` individuals from each sample.
+Samples with a total at or below `depth` are returned unchanged, with a warning when below, as in `vegan`.
+
+- It is the one function that materializes the input: the table is read into R and each sample is drawn in C++ (`src/rarefy.cpp`).
+  The result is a table with at most `depth` rows per sample.
+- `vegan::rrarefy()` draws the individuals one at a time (`do_rrarefy` in `nestedness.c`).
+  `el_rrarefy()` draws the count of each taxon from the hypergeometric distribution of what is left, which costs one draw per taxon and not one per individual.
+  Both give the multivariate hypergeometric distribution of counts, but not the same numbers for the same seed, so the result cannot be compared with `vegan` to 1e-10.
+- The tests instead draw 4,000 replicates of a small table and compare, per cell, the mean and the variance with `vegan`'s and with the exact hypergeometric values.
+  The variance matters: sampling with replacement has the right mean and a variance too large by the finite population correction.
+- Not implemented: a `depth` per sample, `drarefy()`, `rarefy()` and `rarecurve()`.
+  Alpha diversity (`diversity()`, `specnumber()`) is also not implemented; subsampling comes first because richness at unequal depth is not comparable.
+
 ### `decostand`
 
 Methods that act within a sample and need only the non-zero cells, so the result stays a long table without zeros.
