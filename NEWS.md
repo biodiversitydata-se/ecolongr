@@ -2,8 +2,11 @@
 
 * New `el_diversity()` and `el_specnumber()`, the counterparts of `vegan::diversity()` (Shannon, Simpson and inverse Simpson, with `base`) and `vegan::specnumber()`: one value per sample, as a named vector.
   They are lazy, and only the per-sample result is read into R.
+  On a table of 10.9M rows, 2,000 samples and 30,000 taxa, `el_diversity()` added 37 MB of peak memory with 4 threads and 217 MB with 12, in 0.2-0.3 s.
   A sample with no non-zero row is absent from the result, where `vegan` gives an all-zero row Shannon 0, Simpson 1, inverse Simpson `Inf` and richness 0.
   `groups`, `MARGIN`, `equalize.groups` and the other alpha-diversity functions are not implemented.
+
+* The `check` of `el_decostand()`, `el_drarefy()`, `el_rarefy()`, `el_diversity()` and `el_specnumber()` now also stops on `NaN` and `Inf` quantities, which it let through before.
 
 * New `el_drarefy()` and `el_rarefy()`, the counterparts of `vegan::drarefy()` and `vegan::rarefy()`: the expected presence of each taxon, and the expected richness of each sample, in a subsample of a common depth.
   They equal `vegan`'s results and need no random numbers. `el_rarefy()` has no `se` and takes one `depth`.

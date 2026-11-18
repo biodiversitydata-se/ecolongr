@@ -35,7 +35,7 @@ So methods split by whether they need the taxa × samples matrix:
 | `vegdist` | yes | `el_vegdist()`, a compiled kernel over a table sorted by taxon |
 | `rarefy`, `drarefy` | no, one sample at a time | `el_rarefy()`, `el_drarefy()`, lazy apart from the distinct (total, count) pairs |
 | `rrarefy` | no, one sample at a time | `el_rrarefy()`, materializes the input; drawn in C++ |
-| `diversity`, `specnumber` | no, one sample at a time | `el_diversity()`, `el_specnumber()`, one grouped aggregate in DuckDB; only one number per sample is read into R |
+| `diversity`, `specnumber` | no, one sample at a time | `el_diversity()`, `el_specnumber()`, lazy grouped sums in DuckDB; only one number per sample is read into R; 10.9M rows add 37 MB with 4 threads (see `diversity` and `specnumber`) |
 | `decostand` | yes | `el_decostand()` for the methods that need only non-zero cells; `clr` and the completed `rclr` are computed inside `el_vegdist()` and `el_rda()` |
 | `rda`, unconstrained (PCA) | yes | `el_rda()`, truncated SVD of an implicitly centred sparse matrix |
 | `metaMDS` | no, takes a `dist` | `vegan` on our `dist` |
@@ -269,22 +269,45 @@ They are also compared with the mean over 4,000 `el_rrarefy()` replicates.
 ### `diversity` and `specnumber`
 
 Implemented as `el_diversity(x, index, base)` and `el_specnumber(x)`: one value per sample, as a numeric vector named by sample.
-The tests compare them with `vegan::diversity()` and `vegan::specnumber()` at 1e-10 on `varespec`, `BCI` and the synthetic community.
+The tests compare them with `vegan::diversity()` and `vegan::specnumber()` at 1e-10 on `varespec` (all 24 sites), the first 15 sites of `BCI` and the synthetic community, for all three indices, bases 2 and 10, and richness.
+Other tests cover a sample with one taxon, identical samples, proportions and a common scale, rows with `quant == 0`, duplicated rows, `NaN` and `Inf`, and the names of the result.
 
-- Lazy: a window `quant / sum(quant, na.rm = TRUE)` per sample, then one `summarise(.by = sample)`.
-  Only the per-sample result is read into R.
-  Memory is the result plus what DuckDB uses for the grouped aggregate, so it does not grow with the number of taxa.
+- Lazy, and no window.
+  The sample totals are a `summarise(.by = sample)`, an `inner_join()` puts each total back on its rows, `p = quant / total` is a plain `mutate()`, and a second `summarise(.by = sample)` sums `p * log(p)` or `p * p`.
+  The first version wrote `quant / sum(quant, na.rm = TRUE)` as a window in `mutate(.by = sample)`, which DuckDB evaluates by buffering the whole table.
+  `p` is formed before the sums on purpose: a sum of `quant * quant` overflows near 1e154, and `log(S) - sum(x * log(x)) / S` cancels.
+  A peak-memory test fails for a window version (`test-memory.R`).
+- Measured on a table of 10.9M rows, 2,000 samples and 30,000 taxa (uniform), `check = FALSE`, an installed package, a fresh R process, extra peak memory over the process before the call:
+
+  | | 4 threads | 12 threads |
+  |---|---|---|
+  | `el_diversity()`, join version | 37 MB, 0.3 s | 217 MB, 0.2 s |
+  | `el_diversity()`, window version | 1,061 MB, 2.8 s | 1,295 MB, 2.3 s |
+  | `el_specnumber()` | 21 MB | 166 MB |
+
+  The three indices were within 2 MB of each other.
+  With `memory_limit = '500MB'` in the session the join version added 29 MB and the window version 540 MB.
+  The extra memory is DuckDB's per-thread buffers, so it depends on the session's `threads`, and not on the number of rows or taxa within what was measured.
+  Only the 2,000 values are read into R.
+  This is one synthetic uniform table; a skewed one was not measured.
 - Shannon is `-sum(p * log(p)) / log(base)`.
   `duckplyr` translates `log()` but not a two-argument `log(x, base)`, so the base is divided out in R on the per-sample result.
   Simpson is `1 - sum(p * p)` and inverse Simpson `1 / sum(p * p)`, with `p * p` because `^` is not translated.
+- The sums are not compensated: with 1e7 equally common taxa in one sample the relative difference from `vegan` is about 2e-11 (measured by a reviewer), and the last digits can differ between runs with several threads.
 - Quantities need not be whole numbers.
   `vegan` divides by the sample total, so proportions, and any common scale, give the same result.
-  Negative or missing quantities are errors that name the column; `check = FALSE` skips the query that looks for them.
+  Negative, missing and non-finite quantities are errors that name the column; `check = FALSE` skips the query that looks for them.
+  A sample total above about 1e308 (the sum overflows) is not checked.
+- The non-finite check is `quant > .Machine$double.xmax`: DuckDB orders `NaN` and `Inf` above every finite number, `is.nan()` and `is.finite()` are not translated, and `NaN` is not `NULL` to DuckDB, so it was not caught by the missing check.
+  `check_quantities()` is shared, so `el_decostand()`, `el_drarefy()` and `el_rarefy()` now reject `NaN` and `Inf` too.
 - Rows with `quant == 0` are dropped.
+  The table needs one row per sample and taxon, as everywhere in the package; rows are not merged, so a duplicated pair counts as two taxa.
 - All-zero samples: `vegan` gives an all-zero row Shannon 0, Simpson 1, inverse Simpson `Inf` and richness 0 (the 0/0 proportions are `NaN` and are dropped from the sums, which `vegan::diversity()` then reads as an empty sum).
   A long table cannot show such a sample, so it is absent from the result, and no entry is made up for it.
   The only difference from `vegan` is therefore the missing entries; the documentation lists the values to fill in.
   There is no `samples` argument here: a caller who has the full set of sample IDs can fill in the missing ones.
+- The names are the samples as character, sorted as text.
+  Factor samples are not in level order, numeric samples sort as `"10" < "9"`, an `NA` sample is named `NA` and comes last, and numbers that print the same as character share a name.
 - Not implemented: `groups`, `MARGIN` and `equalize.groups` of `diversity()`, and `renyi()`, `fisher.alpha()`, `estimateR()`, `specpool()` and evenness.
   Pielou's evenness is `el_diversity() / log(el_specnumber())`, which the caller can compute.
 
