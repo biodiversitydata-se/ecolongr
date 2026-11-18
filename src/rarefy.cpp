@@ -2,9 +2,7 @@
 using namespace Rcpp;
 
 // Rows must be grouped by sample; start holds the first row of each group and
-// ends with the number of rows. A group is drawn taxon by taxon, each from the
-// hypergeometric distribution of what is left, which is a draw without
-// replacement of `depth` individuals.
+// ends with the number of rows.
 // [[Rcpp::export]]
 NumericVector rarefy_runs(NumericVector quant, IntegerVector start, double depth) {
   NumericVector out = clone(quant);

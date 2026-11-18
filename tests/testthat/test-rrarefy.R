@@ -126,3 +126,65 @@ test_that("a lazy duckplyr table is accepted and the result is a duckplyr table"
   expect_s3_class(got, "duckplyr_df")
   expect_equal(sum(as.data.frame(got)$quant), 33)
 })
+
+test_that("missing, negative, infinite and NaN counts are errors that name the column", {
+  x <- long_table(rarefy_fixture())
+  names(x)[3] <- "n"
+  for (bad in list(NA_real_, -1, Inf, NaN)) {
+    y <- x
+    y$n[1] <- bad
+    expect_error(el_rrarefy(y, depth = 5, quant = "n"), "`n`")
+  }
+})
+
+test_that("depth must be finite", {
+  expect_error(el_rrarefy(long_table(rarefy_fixture()), depth = Inf), "depth")
+})
+
+test_that("counts whose total exceeds the integer range are rarefied", {
+  x <- data.frame(sample = "a", taxon = c("x", "y"), quant = c(2000000000L, 2000000000L))
+  got <- as.data.frame(el_rrarefy(x, depth = 5))
+
+  expect_equal(sum(got$quant), 5)
+})
+
+test_that("a sample is one group even when other ids collate as equal and rows are interleaved", {
+  nfc <- "á"
+  nfd <- "á"
+  x <- data.frame(sample = c(nfc, nfd, nfc), taxon = c("x", "x", "y"), quant = c(5, 5, 5))
+  expect_warning(got <- as.data.frame(el_rrarefy(x, depth = 6)), "not rarefied")
+
+  expect_equal(sum(got$quant[got$sample == nfc]), 6)
+  expect_equal(sum(got$quant[got$sample == nfd]), 5)
+})
+
+test_that("rows with a zero count are ignored, and a sample with only zeros is dropped without a warning", {
+  x <- data.frame(sample = c("a", "a", "b"), taxon = c("x", "y", "x"), quant = c(5, 0, 0))
+
+  expect_warning(got <- as.data.frame(el_rrarefy(x, depth = 3)), NA)
+  expect_equal(got, data.frame(sample = "a", taxon = "x", quant = 3))
+})
+
+test_that("samples come out in the order they first appear", {
+  x <- data.frame(sample = c("b", "a", "b"), taxon = c("x", "x", "y"), quant = c(5, 5, 5))
+  got <- as.data.frame(el_rrarefy(x, depth = 3))
+
+  expect_equal(unique(got$sample), c("b", "a"))
+})
+
+test_that("el_rrarefy converts its input with prudence 'stingy'", {
+  seen <- NULL
+  original <- duckplyr::as_duckdb_tibble
+  testthat::local_mocked_bindings(
+    as_duckdb_tibble = function(x, ..., prudence = "lavish") {
+      seen <<- c(seen, prudence)
+      original(x, ..., prudence = prudence)
+    },
+    .package = "duckplyr"
+  )
+
+  el_rrarefy(long_table(rarefy_fixture()), depth = 5)
+
+  expect_true(length(seen) > 0)
+  expect_true(all(seen == "stingy"))
+})

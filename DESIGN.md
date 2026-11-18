@@ -33,6 +33,7 @@ So methods split by whether they need the taxa × samples matrix:
 | vegan method | Needs the matrix? | In `ecolongr` |
 |---|---|---|
 | `vegdist` | yes | `el_vegdist()`, a compiled kernel over a table sorted by taxon |
+| `rrarefy` | no, one sample at a time | `el_rrarefy()`, materializes the input; drawn in C++ |
 | `decostand` | yes | `el_decostand()` for the methods that need only non-zero cells; `clr` and the completed `rclr` are computed inside `el_vegdist()` and `el_rda()` |
 | `rda`, unconstrained (PCA) | yes | `el_rda()`, truncated SVD of an implicitly centred sparse matrix |
 | `metaMDS` | no, takes a `dist` | `vegan` on our `dist` |
@@ -233,11 +234,13 @@ Result objects keep the `vegan` classes (`dist`, and `rda` where feasible), so t
 
 ### `rrarefy`
 
-Implemented as `el_rrarefy(x, depth)`: a random subsample, without replacement, of `depth` individuals from each sample.
+Implemented as `el_rrarefy(x, depth, sample, taxon, quant)`: a random subsample, without replacement, of `depth` individuals from each sample.
 Samples with a total at or below `depth` are returned unchanged, with a warning when below, as in `vegan`.
 
-- It is the one function that materializes the input: the table is read into R and each sample is drawn in C++ (`src/rarefy.cpp`).
+- It materializes the input: the table is read into R and each sample is drawn in C++ (`src/rarefy.cpp`).
+  The R side copies the table several times, so it needs a few times the memory of the input (a 412 MB table peaked at 1.3 GB).
   The result is a table with at most `depth` rows per sample.
+- Counts or sample totals of about 2^31 and above make R's `rhyper` switch to a slow inversion, about 7 s for one sample at depth 5e8; the result is still correct.
 - `vegan::rrarefy()` draws the individuals one at a time (`do_rrarefy` in `nestedness.c`).
   `el_rrarefy()` draws the count of each taxon from the hypergeometric distribution of what is left, which costs one draw per taxon and not one per individual.
   Both give the multivariate hypergeometric distribution of counts, but not the same numbers for the same seed, so the result cannot be compared with `vegan` to 1e-10.

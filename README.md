@@ -208,6 +208,7 @@ Conventions:
 
 Distances and standardisations equal `vegan`'s to about 1e-10, and PCA scores to about 1e-8 (1e-6 with the iterative solver on large tables), apart from the cases below.
 The tests compare every function and option with `vegan` on `varespec` and a synthetic community, including all-zero samples and explicit zero rows.
+`el_rrarefy()` is random and is compared by the mean and variance of its cells over many replicates, not to 1e-10.
 
 - **`el_decostand("rclr")` leaves zeros absent.**
   `vegan`'s `decostand(x, "rclr")` fills the zeros with values from a matrix completion, so every cell becomes non-zero.

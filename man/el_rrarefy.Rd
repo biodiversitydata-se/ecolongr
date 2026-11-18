@@ -10,30 +10,28 @@ el_rrarefy(x, depth, sample = "sample", taxon = "taxon", quant = "quant")
 \item{x}{A data frame or lazy \code{duckplyr} table with one row per non-zero
 sample and taxon, holding whole counts. Rows with \code{quant == 0} are dropped.}
 
-\item{depth}{A single whole number, at least 1.}
+\item{depth}{A single finite whole number, at least 1.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}. The result has only
 these three columns, with the same names.}
 }
 \value{
-A lazy \code{duckplyr} table, with rows ordered by sample and without
-the taxa that were not drawn.
+A \code{duckplyr} table holding the result in memory, with the samples in
+the order they first appear in \code{x} and without the taxa that were not drawn.
 }
 \description{
-Lazy-table counterpart of \code{\link[vegan:rrarefy]{vegan::rrarefy()}}: a random subsample, without
-replacement, of \code{depth} individuals from each sample. Samples with a total at
-or below \code{depth} are returned unchanged, with a warning if the total is
-below.
+Counterpart of \code{\link[vegan:rrarefy]{vegan::rrarefy()}}: a random subsample, without replacement,
+of \code{depth} individuals from each sample. Samples with a total at or below
+\code{depth} are returned unchanged, with a warning if the total is below.
 }
 \details{
 The result is random, so call \code{\link[=set.seed]{set.seed()}} first for a reproducible one.
 It is not the same random sample as \code{vegan}'s for the same seed: \code{vegan}
 draws the individuals one at a time, and \code{el_rrarefy()} draws the count of
 each taxon from the hypergeometric distribution of what is left. Both draw
-from the same distribution of counts (the multivariate hypergeometric), and
-the tests check that the means and variances over many replicates agree with
-each other and with the exact values.
+from the same distribution of counts (the multivariate hypergeometric).
 
-The table is read into R, so this is not a lazy step: the memory needed is
-that of the input table.
+The table is read into R and copied several times, so this is not a lazy
+step: allow a few times the memory of the input. Counts or totals of about
+2^31 and above make each draw slow.
 }
