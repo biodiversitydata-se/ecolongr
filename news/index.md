@@ -1,19 +1,9 @@
 # Changelog
 
-## ecolongr (development version)
+## ecolongr 0.2.0
 
-- Every function has examples in its help page, run on the table bundled
-  in the package. The README is organised by application area (alpha
-  diversity, beta diversity and ordination), the comparison with `mia`
-  is removed, and the list of differences from `vegan` is a new
-  vignette. There is a package website, built by `pkgdown` from the
-  `main` branch.
-
-- New
-  [`el_frequency_counts()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_frequency_counts.md):
-  for each sample, how many taxa were seen exactly once, twice and so
-  on. It is the input of richness estimators that count the unseen taxa,
-  such as the `breakaway` package, and stays lazy.
+Alpha diversity: richness, diversity indices and rarefaction, tested
+against `vegan`.
 
 - New
   [`el_diversity()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_diversity.md)
@@ -32,16 +22,6 @@
   where `vegan` gives an all-zero row Shannon 0, Simpson 1, inverse
   Simpson `Inf` and richness 0. `groups`, `MARGIN`, `equalize.groups`
   and the other alpha-diversity functions are not implemented.
-
-- The `check` of
-  [`el_decostand()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_decostand.md),
-  [`el_drarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md),
-  [`el_rarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md),
-  [`el_diversity()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_diversity.md)
-  and
-  [`el_specnumber()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_diversity.md)
-  now also stops on `NaN` and `Inf` quantities, which it let through
-  before.
 
 - New
   [`el_drarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
@@ -66,6 +46,29 @@
   seed does not give `vegan`’s result; the tests compare means and
   variances over many replicates with `vegan` and with the exact values.
   The table is read into R.
+
+- New
+  [`el_frequency_counts()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_frequency_counts.md):
+  for each sample, how many taxa were seen exactly once, twice and so
+  on. It is the input of richness estimators that count the unseen taxa,
+  such as the `breakaway` package, and stays lazy.
+
+- The `check` of
+  [`el_decostand()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_decostand.md),
+  [`el_drarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md),
+  [`el_rarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md),
+  [`el_diversity()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_diversity.md)
+  and
+  [`el_specnumber()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_diversity.md)
+  now also stops on `NaN` and `Inf` quantities, which it let through
+  before.
+
+- Every function has examples in its help page, run on the table bundled
+  in the package. The README is organised by application area (alpha
+  diversity, beta diversity and ordination), the comparison with `mia`
+  is removed, and the list of differences from `vegan` is a new
+  vignette. There is a package website, built by `pkgdown` from the
+  `main` branch.
 
 ## ecolongr 0.1.1
 

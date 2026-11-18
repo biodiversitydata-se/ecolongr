@@ -57,7 +57,7 @@ on the dense matrix, so it takes as long as `vegan` does.
 
 ## Status
 
-Early development, version 0.1.1. The functions are tested against
+Early development, version 0.2.0. The functions are tested against
 `vegan`, but names and arguments may still change. Design, scope and
 open questions are in
 [`DESIGN.md`](https://github.com/biodiversitydata-se/ecolongr/blob/main/DESIGN.md).
