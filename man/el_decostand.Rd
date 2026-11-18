@@ -22,8 +22,8 @@ sample and taxon. Rows with \code{quant == 0} are dropped.}
 
 \item{logbase}{Base of the logarithm for \code{method = "log"}.}
 
-\item{check}{If \code{TRUE}, run one query to stop on negative or missing
-quantities. Use \code{FALSE} to stay entirely lazy.}
+\item{check}{If \code{TRUE}, run one query to stop on negative, missing or
+non-finite (NaN, Inf) quantities. Use \code{FALSE} to stay entirely lazy.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}. The result has only
 these three columns, with the same names.}

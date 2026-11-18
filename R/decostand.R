@@ -20,8 +20,8 @@ utils::globalVariables(c("sample", "quant", "minpos", "fractional"))
 #'   sample and taxon. Rows with `quant == 0` are dropped.
 #' @param method One of the methods above.
 #' @param logbase Base of the logarithm for `method = "log"`.
-#' @param check If `TRUE`, run one query to stop on negative or missing
-#'   quantities. Use `FALSE` to stay entirely lazy.
+#' @param check If `TRUE`, run one query to stop on negative, missing or
+#'   non-finite (NaN, Inf) quantities. Use `FALSE` to stay entirely lazy.
 #' @param sample,taxon,quant Names of the columns in `x`. The result has only
 #'   these three columns, with the same names.
 #' @section Zeros and `rclr`:
@@ -91,12 +91,15 @@ log_transform <- function(x, logbase) {
 }
 
 check_quantities <- function(x, quant) {
+  largest <- .Machine$double.xmax
   bad <- as.data.frame(dplyr::summarise(
     x,
     missing = sum(dplyr::if_else(is.na(quant), 1L, 0L)),
-    negative = sum(dplyr::if_else(quant < 0, 1L, 0L), na.rm = TRUE)
+    negative = sum(dplyr::if_else(quant < 0, 1L, 0L), na.rm = TRUE),
+    nonfinite = sum(dplyr::if_else(quant > !!largest, 1L, 0L), na.rm = TRUE)
   ))
   if (isTRUE(bad$missing > 0)) stop("`", quant, "` has missing values", call. = FALSE)
   if (isTRUE(bad$negative > 0)) stop("`", quant, "` has negative values", call. = FALSE)
+  if (isTRUE(bad$nonfinite > 0)) stop("`", quant, "` has non-finite values (NaN or Inf)", call. = FALSE)
   invisible()
 }

@@ -29,8 +29,8 @@ sample and taxon, holding whole counts. Rows with \code{quant == 0} are dropped.
 
 \item{depth}{A single finite whole number, at least 1.}
 
-\item{check}{If \code{TRUE}, run queries that stop on negative, missing or
-non-whole counts and warn about samples below \code{depth}. Use \code{FALSE} to stay
+\item{check}{If \code{TRUE}, run queries that stop on negative, missing, non-finite
+or non-whole counts and warn about samples below \code{depth}. Use \code{FALSE} to stay
 entirely lazy.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}. The result has only
