@@ -1,5 +1,8 @@
 # ecolongr (development version)
 
+* New `el_drarefy()` and `el_rarefy()`, the counterparts of `vegan::drarefy()` and `vegan::rarefy()`: the expected presence of each taxon, and the expected richness of each sample, in a subsample of a common depth.
+  They equal `vegan`'s results and need no random numbers. `el_rarefy()` has no `se` and takes one `depth`.
+
 * New `el_rrarefy()`, the counterpart of `vegan::rrarefy()`: a random subsample of each sample to a common depth.
   It draws from the same distribution as `vegan` but not the same random numbers, so a seed does not give `vegan`'s result; the tests compare means and variances over many replicates with `vegan` and with the exact values.
   The table is read into R.

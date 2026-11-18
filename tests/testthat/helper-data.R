@@ -152,3 +152,18 @@ many_taxa_table <- function(n_samples = 95L, n_taxa = 4500L, seed = 1) {
   sample_id <- unlist(lapply(per_taxon, function(k) sample.int(n_samples, k)))
   data.frame(sample = sprintf("s%03d", sample_id), taxon = taxon, quant = rexp(length(taxon)) * 100)
 }
+
+rarefy_fixture <- function() {
+  matrix(c(1, 2, 3, 4, 10, 0,
+           1, 5, 0, 9, 15, 0,
+           1, 1, 2, 3, 5, 0),
+         nrow = 3, byrow = TRUE,
+         dimnames = list(c("a", "b", "c"), paste0("t", 1:6)))
+}
+
+replicated <- function(m, reps) {
+  long <- long_table(m)
+  rows <- long[rep(seq_len(nrow(long)), times = reps), ]
+  rows$sample <- paste(rows$sample, rep(seq_len(reps), each = nrow(long)), sep = "_")
+  rows
+}

@@ -1,18 +1,3 @@
-rarefy_fixture <- function() {
-  matrix(c(1, 2, 3, 4, 10, 0,
-           1, 5, 0, 9, 15, 0,
-           1, 1, 2, 3, 5, 0),
-         nrow = 3, byrow = TRUE,
-         dimnames = list(c("a", "b", "c"), paste0("t", 1:6)))
-}
-
-replicated <- function(m, reps) {
-  long <- long_table(m)
-  rows <- long[rep(seq_len(nrow(long)), times = reps), ]
-  rows$sample <- paste(rows$sample, rep(seq_len(reps), each = nrow(long)), sep = "_")
-  rows
-}
-
 cell_moments <- function(got, m, reps) {
   key <- rep(rownames(m), each = ncol(m))
   full <- matrix(0, nrow(m) * reps, ncol(m), dimnames = list(NULL, colnames(m)))

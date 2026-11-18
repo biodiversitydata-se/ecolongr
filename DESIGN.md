@@ -33,6 +33,7 @@ So methods split by whether they need the taxa × samples matrix:
 | vegan method | Needs the matrix? | In `ecolongr` |
 |---|---|---|
 | `vegdist` | yes | `el_vegdist()`, a compiled kernel over a table sorted by taxon |
+| `rarefy`, `drarefy` | no, one sample at a time | `el_rarefy()`, `el_drarefy()`, lazy apart from the distinct (total, count) pairs |
 | `rrarefy` | no, one sample at a time | `el_rrarefy()`, materializes the input; drawn in C++ |
 | `decostand` | yes | `el_decostand()` for the methods that need only non-zero cells; `clr` and the completed `rclr` are computed inside `el_vegdist()` and `el_rda()` |
 | `rda`, unconstrained (PCA) | yes | `el_rda()`, truncated SVD of an implicitly centred sparse matrix |
@@ -246,8 +247,23 @@ Samples with a total at or below `depth` are returned unchanged, with a warning 
   Both give the multivariate hypergeometric distribution of counts, but not the same numbers for the same seed, so the result cannot be compared with `vegan` to 1e-10.
 - The tests instead draw 4,000 replicates of a small table and compare, per cell, the mean and the variance with `vegan`'s and with the exact hypergeometric values.
   The variance matters: sampling with replacement has the right mean and a variance too large by the finite population correction.
-- Not implemented: a `depth` per sample, `drarefy()`, `rarefy()` and `rarecurve()`.
-  Alpha diversity (`diversity()`, `specnumber()`) is also not implemented; subsampling comes first because richness at unequal depth is not comparable.
+- Not implemented: a `depth` per sample.
+  Alpha diversity indices (`diversity()`, `specnumber()`) are not implemented; `el_rarefy()` gives expected richness at equal depth.
+
+### `drarefy` and `rarefy`
+
+Implemented as `el_drarefy(x, depth)` and `el_rarefy(x, depth)`: the expected presence of each taxon, and the expected richness of each sample, in a subsample of `depth` individuals.
+Deterministic, so the tests compare them with `vegan::drarefy` and `vegan::rarefy` at 1e-10 on `BCI`, the synthetic community and one sample of 2 million individuals.
+They are also compared with the mean over 4,000 `el_rrarefy()` replicates.
+
+- The probability that a taxon is present depends only on the sample total and the count.
+  A lazy query finds the distinct pairs, R computes the probability for each with `lchoose()` as `vegan` does, and a join puts it back.
+  `el_drarefy()` stays a lazy long table; `el_rarefy()` reads only the distinct (sample, total, count) combinations.
+- The first version computed it in DuckDB with `lgamma()`.
+  The difference of two large `lgamma` values loses digits, and the result was off by 1e-9 at 1e5 individuals and 1e-6 at 1e7 with a small depth, against 1e-12 for `vegan`.
+  DuckDB has no `log1p`, so the stable form could not be written in SQL.
+- Not implemented: `se = TRUE`, which needs a sum over pairs of taxa, and several depths at once (call the function once per depth).
+  `rarecurve()` is not planned, since it is a plot.
 
 ### `decostand`
 
