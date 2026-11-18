@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/biodiversitydata-se/ecolongr/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/biodiversitydata-se/ecolongr/blob/0.2.0/DESCRIPTION)
 
 Lundin D (2026). *ecolongr: Community Ecology Analyses on Long Tables*.
 R package version 0.2.0,

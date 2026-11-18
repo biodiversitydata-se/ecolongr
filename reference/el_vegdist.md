@@ -132,7 +132,7 @@ d <- counts |>
   el_decostand("total") |>
   el_vegdist("bray", samples = metadata$sample)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpeLvVe0/duckdb
+#> ℹ /tmp/RtmpiTlLh3/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
@@ -162,7 +162,7 @@ head(cmdscale(d, k = 2))
 d_aitchison <- counts |>
   el_vegdist("aitchison", pseudocount = "inverse_depth", samples = metadata$sample)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpeLvVe0/duckdb
+#> ℹ /tmp/RtmpiTlLh3/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
