@@ -1,0 +1,24 @@
+url: https://biodiversitydata-se.github.io/ecolongr/
+
+template:
+  bootstrap: 5
+
+reference:
+  - title: Alpha diversity
+    desc: Richness, diversity indices and rarefaction of each sample.
+    contents:
+      - el_specnumber
+      - el_diversity
+      - el_rarefy
+      - el_drarefy
+      - el_rrarefy
+      - el_frequency_counts
+  - title: Beta diversity
+    desc: Standardisation and dissimilarities between samples.
+    contents:
+      - el_decostand
+      - el_vegdist
+  - title: Ordination
+    desc: Principal components of the table, in the `rda` class of vegan.
+    contents:
+      - el_rda

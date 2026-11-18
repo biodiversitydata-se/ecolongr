@@ -4,3 +4,8 @@
 ^\.git
 ^bench$
 ^data-raw$
+^man-roxygen$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.claude$
