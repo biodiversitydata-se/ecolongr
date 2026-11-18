@@ -41,3 +41,15 @@ test_that("el_vegdist converts its input with prudence 'stingy'", {
 
   expect_equal(seen, "stingy")
 })
+
+test_that("el_diversity and el_specnumber stay inside DuckDB on a stingy frame", {
+  x <- stingy(long_table(varespec))
+
+  for (check in c(TRUE, FALSE)) {
+    for (index in c("shannon", "simpson", "invsimpson")) {
+      expect_equal(el_diversity(x, index, check = check)[rownames(varespec)],
+                   c(vegan::diversity(varespec, index)), tolerance = 1e-10)
+    }
+    expect_equal(el_specnumber(x, check = check)[rownames(varespec)], c(vegan::specnumber(varespec)))
+  }
+})

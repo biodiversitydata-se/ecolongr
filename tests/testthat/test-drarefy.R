@@ -142,3 +142,14 @@ test_that("large totals and a small depth still match vegan to 1e-10", {
     expect_equal(got$quant, as.numeric(vegan_drarefy(m, depth))[match(got$taxon, colnames(m))], tolerance = 1e-10)
   }
 })
+
+test_that("NaN and Inf counts are errors", {
+  x <- long_table(rarefy_fixture())
+  for (f in list(el_drarefy, el_rarefy)) {
+    for (bad in c(NaN, Inf)) {
+      y <- x
+      y$quant[1] <- bad
+      expect_error(f(y, depth = 5), "`quant` has non-finite values")
+    }
+  }
+})

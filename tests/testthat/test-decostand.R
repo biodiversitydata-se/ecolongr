@@ -171,3 +171,12 @@ test_that("check = FALSE skips the validation query", {
   el_decostand(x, "total")
   expect_equal(seen, 1)
 })
+
+test_that("el_decostand rejects NaN and Inf quantities", {
+  x <- long_table(varespec[1:3, ])
+  for (bad in c(NaN, Inf)) {
+    y <- x
+    y$quant[1] <- bad
+    expect_error(el_decostand(y, "total"), "`quant` has non-finite values")
+  }
+})

@@ -22,8 +22,8 @@ utils::globalVariables(c("total", "k", "p"))
 #' `vegan` does. Only these pairs, not the table, are read into R.
 #'
 #' @inheritParams el_rrarefy
-#' @param check If `TRUE`, run queries that stop on negative, missing or
-#'   non-whole counts and warn about samples below `depth`. Use `FALSE` to stay
+#' @param check If `TRUE`, run queries that stop on negative, missing, non-finite
+#'   or non-whole counts and warn about samples below `depth`. Use `FALSE` to stay
 #'   entirely lazy.
 #' @return `el_drarefy()`: a lazy `duckplyr` table with the columns `sample`,
 #'   `taxon` and `quant`, named as in the arguments. `el_rarefy()`: a numeric
