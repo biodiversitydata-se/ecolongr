@@ -78,3 +78,33 @@ taxa), and which digits can vary between runs with several threads.
 Not implemented: \code{groups}, \code{MARGIN} and \code{equalize.groups} of \code{diversity()},
 and \code{renyi()}, \code{fisher.alpha()}, \code{estimateR()}, \code{specpool()} and evenness.
 }
+\examples{
+library(dplyr)
+
+# A long table of read counts for 16S ASVs in a time series from the Baltic Sea.
+counts <- duckplyr::read_csv_duckdb(
+  system.file("extdata", "lmo_free_living.tsv.gz", package = "ecolongr"),
+  options = list(delim = "\t", header = TRUE), prudence = "stingy"
+)
+metadata <- read.delim(system.file("extdata", "lmo_free_living_samples.tsv", package = "ecolongr"))
+
+# Samples with at least 5,000 reads.
+deep <- counts |>
+  summarise(reads = sum(quant, na.rm = TRUE), .by = sample) |>
+  filter(reads >= 5000) |>
+  select(sample)
+counts <- semi_join(counts, deep, by = "sample")
+metadata <- filter(metadata, sample \%in\% as.data.frame(deep)$sample)
+richness <- el_specnumber(counts)
+shannon <- el_diversity(counts, "shannon")
+head(richness)
+head(shannon)
+
+# One table, with the metadata.
+tibble(sample = names(shannon), richness = richness[names(shannon)], shannon = shannon) |>
+  left_join(metadata, by = "sample") |>
+  head()
+
+# Shannon index in bits.
+el_diversity(counts, "shannon", base = 2) |> head()
+}

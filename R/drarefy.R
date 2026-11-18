@@ -28,6 +28,18 @@ utils::globalVariables(c("total", "k", "p"))
 #' @return `el_drarefy()`: a lazy `duckplyr` table with the columns `sample`,
 #'   `taxon` and `quant`, named as in the arguments. `el_rarefy()`: a numeric
 #'   vector with one expected richness per sample, named by sample.
+#' @example man-roxygen/lmo-counts.R
+#' @examples
+#' # Expected richness of each sample in a subsample of 5,000 reads.
+#' expected <- el_rarefy(counts, depth = 5000)
+#' observed <- el_specnumber(counts)
+#' head(cbind(observed, expected = expected[names(observed)]))
+#'
+#' # The probability that each ASV is in such a subsample, as a lazy table.
+#' counts |>
+#'   el_drarefy(depth = 5000) |>
+#'   head() |>
+#'   as.data.frame()
 #' @export
 el_drarefy <- function(x, depth, check = TRUE, sample = "sample", taxon = "taxon", quant = "quant") {
   x <- rarefy_input(x, depth, check, sample, taxon, quant)

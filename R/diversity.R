@@ -45,6 +45,20 @@ utils::globalVariables(c("h", "total"))
 #' @param sample,taxon,quant Names of the columns in `x`.
 #' @return A numeric vector with one value per sample, named by sample and
 #'   sorted by name.
+#' @example man-roxygen/lmo-counts.R
+#' @examples
+#' richness <- el_specnumber(counts)
+#' shannon <- el_diversity(counts, "shannon")
+#' head(richness)
+#' head(shannon)
+#'
+#' # One table, with the metadata.
+#' tibble(sample = names(shannon), richness = richness[names(shannon)], shannon = shannon) |>
+#'   left_join(metadata, by = "sample") |>
+#'   head()
+#'
+#' # Shannon index in bits.
+#' el_diversity(counts, "shannon", base = 2) |> head()
 #' @export
 el_diversity <- function(x, index = c("shannon", "simpson", "invsimpson"), base = exp(1),
                          check = TRUE, sample = "sample", taxon = "taxon", quant = "quant") {

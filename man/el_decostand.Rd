@@ -61,3 +61,30 @@ geometric mean. The result is therefore not \code{vegan}'s
 agree when it has none.
 }
 
+\examples{
+library(dplyr)
+
+# A long table of read counts for 16S ASVs in a time series from the Baltic Sea.
+counts <- duckplyr::read_csv_duckdb(
+  system.file("extdata", "lmo_free_living.tsv.gz", package = "ecolongr"),
+  options = list(delim = "\t", header = TRUE), prudence = "stingy"
+)
+metadata <- read.delim(system.file("extdata", "lmo_free_living_samples.tsv", package = "ecolongr"))
+
+# Samples with at least 5,000 reads.
+deep <- counts |>
+  summarise(reads = sum(quant, na.rm = TRUE), .by = sample) |>
+  filter(reads >= 5000) |>
+  select(sample)
+counts <- semi_join(counts, deep, by = "sample")
+metadata <- filter(metadata, sample \%in\% as.data.frame(deep)$sample)
+# A lazy table: nothing is computed until a result is needed.
+relative <- counts |> el_decostand("total")
+relative |> head() |> as.data.frame()
+
+# Standardise, then compute distances.
+d <- counts |>
+  el_decostand("hellinger") |>
+  el_vegdist("euclidean", samples = metadata$sample)
+attr(d, "Size")
+}

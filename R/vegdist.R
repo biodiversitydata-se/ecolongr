@@ -49,6 +49,21 @@
 #'   used by R for the result and the current batch.
 #' @param sample,taxon,quant Names of the columns in `x`.
 #' @return A `dist` object.
+#' @example man-roxygen/lmo-counts.R
+#' @examples
+#' d <- counts |>
+#'   el_decostand("total") |>
+#'   el_vegdist("bray", samples = metadata$sample)
+#'
+#' # A dist object, so base R and vegan work on it.
+#' hc <- hclust(d, "average")
+#' head(cutree(hc, k = 4))
+#' head(cmdscale(d, k = 2))
+#'
+#' # Aitchison distance from the raw counts, with a pseudocount of 1 / library size.
+#' d_aitchison <- counts |>
+#'   el_vegdist("aitchison", pseudocount = "inverse_depth", samples = metadata$sample)
+#' round(cor(d, d_aitchison), 2)
 #' @export
 el_vegdist <- function(x, method = c("bray", "jaccard", "euclidean", "aitchison", "manhattan", "canberra", "robust.aitchison"), binary = FALSE,
                        pseudocount = 1, ropt = 3, samples = NULL, batch_rows = 1e6, threads = NULL, memory_limit = NULL,

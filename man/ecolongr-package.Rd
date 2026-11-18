@@ -8,6 +8,15 @@
 \description{
 Distances, transformations and ordination for community data kept as long tables without zeros, computed lazily with 'duckplyr' so that the full taxa by samples matrix is never held in memory. Results are tested against 'vegan'.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://biodiversitydata-se.github.io/ecolongr/}
+  \item \url{https://github.com/biodiversitydata-se/ecolongr}
+  \item Report bugs at \url{https://github.com/biodiversitydata-se/ecolongr/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Daniel Lundin \email{matricaria.suaveolens@gmail.com}
 

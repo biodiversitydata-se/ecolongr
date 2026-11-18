@@ -35,6 +35,17 @@ utils::globalVariables(c("sample", "quant", "minpos", "fractional"))
 #' agree when it has none.
 #'
 #' @return A lazy `duckplyr` table.
+#' @example man-roxygen/lmo-counts.R
+#' @examples
+#' # A lazy table: nothing is computed until a result is needed.
+#' relative <- counts |> el_decostand("total")
+#' relative |> head() |> as.data.frame()
+#'
+#' # Standardise, then compute distances.
+#' d <- counts |>
+#'   el_decostand("hellinger") |>
+#'   el_vegdist("euclidean", samples = metadata$sample)
+#' attr(d, "Size")
 #' @export
 el_decostand <- function(x, method = c("total", "hellinger", "log", "pa", "rclr"),
                          logbase = 2, check = TRUE,

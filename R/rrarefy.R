@@ -21,6 +21,14 @@
 #'   these three columns, with the same names.
 #' @return A `duckplyr` table holding the result in memory, with the samples in
 #'   the order they first appear in `x` and without the taxa that were not drawn.
+#' @example man-roxygen/lmo-counts.R
+#' @examples
+#' set.seed(1)
+#' subsample <- el_rrarefy(counts, depth = 5000)
+#'
+#' # Every sample now has exactly 5,000 reads, but different samples keep different ASVs.
+#' subsample |> summarise(reads = sum(quant), .by = sample) |> head() |> as.data.frame()
+#' el_specnumber(subsample) |> head()
 #' @export
 el_rrarefy <- function(x, depth, sample = "sample", taxon = "taxon", quant = "quant") {
   if (!is.numeric(depth) || length(depth) != 1 || !is.finite(depth) || depth < 1 || depth != round(depth)) {

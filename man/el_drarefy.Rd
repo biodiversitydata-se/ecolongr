@@ -64,3 +64,31 @@ The probability depends only on the sample total and the count, so it is
 computed once for each distinct pair of the two, in R with \code{\link[=lchoose]{lchoose()}} as
 \code{vegan} does. Only these pairs, not the table, are read into R.
 }
+\examples{
+library(dplyr)
+
+# A long table of read counts for 16S ASVs in a time series from the Baltic Sea.
+counts <- duckplyr::read_csv_duckdb(
+  system.file("extdata", "lmo_free_living.tsv.gz", package = "ecolongr"),
+  options = list(delim = "\t", header = TRUE), prudence = "stingy"
+)
+metadata <- read.delim(system.file("extdata", "lmo_free_living_samples.tsv", package = "ecolongr"))
+
+# Samples with at least 5,000 reads.
+deep <- counts |>
+  summarise(reads = sum(quant, na.rm = TRUE), .by = sample) |>
+  filter(reads >= 5000) |>
+  select(sample)
+counts <- semi_join(counts, deep, by = "sample")
+metadata <- filter(metadata, sample \%in\% as.data.frame(deep)$sample)
+# Expected richness of each sample in a subsample of 5,000 reads.
+expected <- el_rarefy(counts, depth = 5000)
+observed <- el_specnumber(counts)
+head(cbind(observed, expected = expected[names(observed)]))
+
+# The probability that each ASV is in such a subsample, as a lazy table.
+counts |>
+  el_drarefy(depth = 5000) |>
+  head() |>
+  as.data.frame()
+}
