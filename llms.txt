@@ -60,7 +60,7 @@ on the dense matrix, so it takes as long as `vegan` does.
 Early development, version 0.1.1. The functions are tested against
 `vegan`, but names and arguments may still change. Design, scope and
 open questions are in
-[`DESIGN.md`](https://biodiversitydata-se.github.io/ecolongr/DESIGN.md).
+[`DESIGN.md`](https://github.com/biodiversitydata-se/ecolongr/blob/main/DESIGN.md).
 
 ## Installation
 
@@ -430,9 +430,9 @@ pipeline from 2.4 GB to 1.1 GB at a cost of 3 seconds.
 
 ## Development
 
-- [`DESIGN.md`](https://biodiversitydata-se.github.io/ecolongr/DESIGN.md)
+- [`DESIGN.md`](https://github.com/biodiversitydata-se/ecolongr/blob/main/DESIGN.md)
   has the scope, decisions, measurements and open questions.
-- [`AGENTS.md`](https://biodiversitydata-se.github.io/ecolongr/AGENTS.md)
+- [`AGENTS.md`](https://github.com/biodiversitydata-se/ecolongr/blob/main/AGENTS.md)
   has the working rules: tests first, `vegan` as the reference.
 - `bench/` has scripts for the large synthetic tables. Benchmark with an
   installed package, not `devtools::load_all()`, which compiles without
