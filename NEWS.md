@@ -1,5 +1,9 @@
 # ecolongr (development version)
 
+* Every function has examples in its help page, run on the table bundled in the package.
+  The README is organised by application area (alpha diversity, beta diversity and ordination), the comparison with `mia` is removed, and the list of differences from `vegan` is a new vignette.
+  There is a package website, built by `pkgdown` from the `main` branch.
+
 * New `el_frequency_counts()`: for each sample, how many taxa were seen exactly once, twice and so on.
   It is the input of richness estimators that count the unseen taxa, such as the `breakaway` package, and stays lazy.
 

@@ -504,7 +504,10 @@ If one of them already computes a measure correctly on sparse input, a thin wrap
 - Whether to add `rda` with explanatory variables (see above).
 - How the cost of the matrix completion grows with `ropt` above 3 on large tables, which has not been measured.
 - Which of the other `vegan::vegdist` indices are worth the effort.
-- Whether to implement `breakaway`-type richness estimators on top of `el_frequency_counts()`.
-  `breakaway` (GitHub 5.0.1; the CRAN 4.8.4 is no longer maintained) is GPL-2, and its documentation does not state the model-selection criterion or the standard-error formula, so an implementation would follow the papers (Willis and Bunge 2015, doi:10.1111/biom.12332) and be compared with `breakaway` on real frequency tables within a tolerance, not to 1e-10.
-  Tables without singletons (DADA2 output) need `breakaway_nof1()`, which its documentation calls less stable.
+- Richness estimators of the `breakaway` type are decided against, for now.
+  `el_frequency_counts()` gives their input, and `breakaway` reads it after a split by sample and a sort by count (the help page shows the pipeline, in parallel with `purrr` and `mirai`).
+  On simulated frequency tables of 500 samples, `breakaway` 5.0.1 (GitHub; the CRAN 4.8.4 is no longer maintained) took 0.1-0.4 s per sample on one core, all of it in fitting the models, so a reimplementation would not save time on the large table, which is what this package is for.
+  The estimates also depend strongly on the `cutoff` argument (about 80,000, 9,000 and 8,000 ASVs for the default, 10 and 20 on one sample with 6,271 observed), which speed does not change.
+  `breakaway` is GPL-2 and its documentation does not state the model-selection criterion or the standard-error formula, so an implementation would have to follow the papers (Willis and Bunge 2015, doi:10.1111/biom.12332) and could not be compared to 1e-10.
+  Tables without singletons (DADA2 output) need `breakaway_nof1()`.
   `DivNet` is out of scope.

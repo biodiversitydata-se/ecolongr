@@ -250,25 +250,6 @@ plot(fit, add = TRUE, arrow.mul = 5)
 
 Temperature lies along the first axis and explains much more of the variation (`r2`) than salinity, which points the other way.
 
-## Filling the zeros: `rclr`
-
-The robust clr (`rclr`) takes the logarithm of the non-zero counts only and fills the zeros by a low-rank matrix completion.
-`vegan::decostand(x, "rclr")` does this, and so do `el_vegdist(method = "robust.aitchison")` and `el_rda(transform = "rclr")`, on the raw counts and without the dense table.
-Every cell is filled, so `el_decostand("rclr")` cannot return it as a table without zeros; it only takes the log-ratio of the non-zero cells.
-
-The completion has rank `ropt`, 3 as in `vegan`, so a PCA of it has at most `ropt` axes:
-
-```{r rclr}
-pca_rclr <- counts |>
-  el_rda(k = 3, transform = "rclr", ropt = 3, samples = metadata$sample)
-
-plot_season(pca_rclr, "rclr, completion of rank 3")
-summary(pca_rclr)$cont$importance[2:3, ]
-```
-
-The three axes hold all the variance of the completed matrix by construction.
-To get more axes, raise `ropt`: the cost of the completion grows with the rank, and only rank 3 has been timed on large tables.
-
 ## How much do the axes leave out?
 
 `el_rda()` keeps the first `k` axes.
@@ -304,6 +285,57 @@ r2 <- sapply(
 )
 round(r2, 2)
 ```
+
+## Alpha diversity
+
+The same table gives the diversity of each sample.
+`el_specnumber()` and `el_diversity()` return one value per sample, named by sample, and the metadata joins on the name:
+
+```{r alpha}
+richness <- el_specnumber(counts)
+shannon <- el_diversity(counts, "shannon")
+
+reads <- counts |>
+  summarise(reads = sum(quant, na.rm = TRUE), .by = sample) |>
+  as.data.frame()
+
+alpha <- tibble(sample = names(shannon), shannon = shannon, richness = richness[sample]) |>
+  left_join(metadata, by = "sample") |>
+  left_join(reads, by = "sample")
+head(alpha[, c("sample", "date", "reads", "richness", "shannon")])
+```
+
+Richness grows with the number of reads, so a deep sample looks richer than a shallow one.
+
+```{r richness-depth, fig.height = 4}
+plot(alpha$reads, alpha$richness, pch = 19, col = season_colours(alpha$day_of_year),
+     xlab = "Reads in the table", ylab = "Observed ASVs")
+```
+
+`el_rarefy()` gives the richness each sample is expected to have in a subsample of a common number of reads.
+It is exact, with no random numbers, and equals `vegan::rarefy()`.
+At the depth of the shallowest sample the samples are comparable, and richness over time can be read:
+
+```{r rarefy, fig.height = 4}
+common_depth <- min(alpha$reads)
+alpha$expected <- el_rarefy(counts, common_depth)[alpha$sample]
+
+plot(alpha$date, alpha$expected, pch = 19, col = season_colours(alpha$day_of_year),
+     xlab = "", ylab = sprintf("Expected ASVs in %s reads", format(common_depth, big.mark = ",")))
+```
+
+`el_drarefy()` gives, for each ASV in each sample, the probability that it is in such a subsample, as a lazy table.
+`el_rrarefy()` draws one random subsample instead and returns it as a table, for analyses that need counts at equal depth.
+
+A model of how many ASVs a sample has not yet shown needs the number of ASVs seen once, twice and so on.
+`el_frequency_counts()` computes that for every sample in one lazy step:
+
+```{r frequencies}
+frequencies <- counts |> el_frequency_counts() |> as.data.frame()
+frequencies |> filter(sample == metadata$sample[1]) |> head()
+```
+
+The `breakaway` package fits such models to one sample at a time; the help page of `el_frequency_counts()` shows how to run it on this table in parallel with `purrr`.
 
 ## Memory
 
