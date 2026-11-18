@@ -250,6 +250,15 @@ Samples with a total at or below `depth` are returned unchanged, with a warning 
 - Not implemented: a `depth` per sample.
   Alpha diversity indices (`diversity()`, `specnumber()`) are not implemented; `el_rarefy()` gives expected richness at equal depth.
 
+### `frequency_counts`
+
+Implemented as `el_frequency_counts(x)`: for each sample, the number of taxa seen exactly *k* times, for each *k* present.
+It is one grouped count, so the table stays lazy and its size depends on the number of distinct counts, not on the number of taxa.
+There is no `vegan` function for it; the tests compare it with `table()` of each sample's counts, and check that the frequencies add up to `specnumber()` and to the sample totals.
+
+It is the input of richness estimators that count the unseen taxa (`breakaway`, Chao1, Chao-Bunge), which fit a model to this table in R.
+Those estimators are not implemented; see "Open questions".
+
 ### `drarefy` and `rarefy`
 
 Implemented as `el_drarefy(x, depth)` and `el_rarefy(x, depth)`: the expected presence of each taxon, and the expected richness of each sample, in a subsample of `depth` individuals.
@@ -449,3 +458,7 @@ If one of them already computes a measure correctly on sparse input, a thin wrap
 - Whether to add `rda` with explanatory variables (see above).
 - How the cost of the matrix completion grows with `ropt` above 3 on large tables, which has not been measured.
 - Which of the other `vegan::vegdist` indices are worth the effort.
+- Whether to implement `breakaway`-type richness estimators on top of `el_frequency_counts()`.
+  `breakaway` (GitHub 5.0.1; the CRAN 4.8.4 is no longer maintained) is GPL-2, and its documentation does not state the model-selection criterion or the standard-error formula, so an implementation would follow the papers (Willis and Bunge 2015, doi:10.1111/biom.12332) and be compared with `breakaway` on real frequency tables within a tolerance, not to 1e-10.
+  Tables without singletons (DADA2 output) need `breakaway_nof1()`, which its documentation calls less stable.
+  `DivNet` is out of scope.

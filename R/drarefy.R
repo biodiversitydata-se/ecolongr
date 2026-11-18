@@ -59,11 +59,7 @@ rarefy_input <- function(x, depth, check, sample, taxon, quant) {
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   x <- dplyr::select(x, sample = dplyr::all_of(sample), taxon = dplyr::all_of(taxon),
                      quant = dplyr::all_of(quant))
-  if (check) {
-    check_quantities(x, quant)
-    fractional <- dplyr::summarise(x, n = sum(dplyr::if_else(round(quant) != quant, 1L, 0L), na.rm = TRUE))
-    if (as.data.frame(fractional)$n > 0) stop("`", quant, "` must hold whole counts (integers)", call. = FALSE)
-  }
+  if (check) check_counts(x, quant)
   x <- dplyr::filter(x, quant > 0)
   x <- dplyr::mutate(x, total = sum(quant, na.rm = TRUE), .by = sample)
   if (check) {
@@ -71,4 +67,11 @@ rarefy_input <- function(x, depth, check, sample, taxon, quant) {
     if (isTRUE(smallest < depth)) warning("some samples have a total below `depth` and are not rarefied", call. = FALSE)
   }
   x
+}
+
+check_counts <- function(x, quant) {
+  check_quantities(x, quant)
+  fractional <- dplyr::summarise(x, n = sum(dplyr::if_else(round(quant) != quant, 1L, 0L), na.rm = TRUE))
+  if (as.data.frame(fractional)$n > 0) stop("`", quant, "` must hold whole counts (integers)", call. = FALSE)
+  invisible()
 }

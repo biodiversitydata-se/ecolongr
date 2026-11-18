@@ -1,5 +1,8 @@
 # ecolongr (development version)
 
+* New `el_frequency_counts()`: for each sample, how many taxa were seen exactly once, twice and so on.
+  It is the input of richness estimators that count the unseen taxa, such as the `breakaway` package, and stays lazy.
+
 * New `el_drarefy()` and `el_rarefy()`, the counterparts of `vegan::drarefy()` and `vegan::rarefy()`: the expected presence of each taxon, and the expected richness of each sample, in a subsample of a common depth.
   They equal `vegan`'s results and need no random numbers. `el_rarefy()` has no `se` and takes one `depth`.
 
