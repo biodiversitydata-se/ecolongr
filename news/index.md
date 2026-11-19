@@ -2,6 +2,23 @@
 
 ## ecolongr (development version)
 
+- [`el_rrarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_rrarefy.md),
+  [`el_drarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  and
+  [`el_rarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  have a default `depth`, the smallest sample total, so `el_rrarefy(x)`
+  gives every sample the same depth without dropping any. Samples with a
+  total below `depth` are now dropped, with a warning that names them,
+  and it is an error if none is left. Before,
+  [`el_rrarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_rrarefy.md)
+  returned them unchanged and
+  [`el_drarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  and
+  [`el_rarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  used their total as the depth, as `vegan` does, which gave values that
+  were not at a common depth. With `check = FALSE` the latter two drop
+  silently.
+
 ## ecolongr 0.2.0
 
 Alpha diversity: richness, diversity indices and rarefaction, tested

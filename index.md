@@ -203,7 +203,8 @@ gives the richness each sample is expected to have in a subsample of
 draws one random subsample, as
 [`vegan::rrarefy()`](https://vegandevs.github.io/vegan/reference/rarefy.html)
 does, and returns a table; use it when you need the subsampled table
-itself.
+itself. All three take no `depth` to mean the smallest sample total, and
+drop a sample below `depth` with a warning.
 
 ``` r
 
@@ -215,7 +216,7 @@ depth <- counts |>
 expected_richness <- el_rarefy(counts, depth)
 
 set.seed(1)
-subsample <- el_rrarefy(counts, depth)
+subsample <- el_rrarefy(counts) # to the smallest sample total
 ```
 
 Estimators of the total richness, including the taxa not seen, such as
@@ -363,6 +364,13 @@ The differences that matter:
 - [`el_rrarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_rrarefy.md)
   is random and does not give `vegan`’s subsample for the same seed; it
   draws from the same distribution.
+- [`el_rrarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_rrarefy.md),
+  [`el_drarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  and
+  [`el_rarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  drop samples with a total below `depth`, where `vegan` returns them
+  unchanged (`rrarefy()`) or treats `depth` as their total (`drarefy()`,
+  `rarefy()`).
 - `el_decostand("rclr")` leaves zeros absent, which `vegan`’s completed
   `rclr` does not; `el_vegdist(method = "robust.aitchison")` and
   `el_rda(transform = "rclr")` run the same completion as `vegan`.

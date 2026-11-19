@@ -13,7 +13,7 @@ expected to contain. There is no randomness, and the results equal
 ``` r
 el_drarefy(
   x,
-  depth,
+  depth = NULL,
   check = TRUE,
   sample = "sample",
   taxon = "taxon",
@@ -22,7 +22,7 @@ el_drarefy(
 
 el_rarefy(
   x,
-  depth,
+  depth = NULL,
   check = TRUE,
   sample = "sample",
   taxon = "taxon",
@@ -39,13 +39,16 @@ el_rarefy(
 
 - depth:
 
-  A single finite whole number, at least 1.
+  A single finite whole number, at least 1. The default, `NULL`, is the
+  smallest total among the samples with a non-zero count, which takes
+  one small query.
 
 - check:
 
   If `TRUE`, run queries that stop on negative, missing, non-finite or
-  non-whole counts and warn about samples below `depth`. Use `FALSE` to
-  stay entirely lazy.
+  non-whole counts, warn about samples below `depth` and stop if none is
+  left. Use `FALSE` to stay lazy: small samples are still dropped,
+  silently.
 
 - sample, taxon, quant:
 
@@ -69,9 +72,11 @@ vector with one expected richness per sample, named by sample.
   its expected richness at `depth`. Unlike `vegan`, it has no `se`
   option and takes a single `depth`.
 
-A sample with a total below `depth` is treated as if `depth` were its
-total, so every taxon in it has probability 1, with a warning as in
-`vegan`.
+With no `depth`, the smallest sample total is used, so no sample is
+dropped. A sample with a total below `depth` is dropped from the result,
+with a warning that names it, and it is an error if no sample is left.
+`vegan` instead treats such a sample as if `depth` were its total. A
+sample whose total equals `depth` is kept.
 
 The probability depends only on the sample total and the count, so it is
 computed once for each distinct pair of the two, in R with
@@ -114,11 +119,11 @@ counts |>
   el_drarefy(depth = 5000) |>
   head() |>
   as.data.frame()
-#>                          sample                            taxon     quant
-#> 1 LMO_2011-2023_16S:P10353_1017 b3cbeae7d7560b285766ebf0563e38cf 0.9996520
-#> 2 LMO_2011-2023_16S:P10353_1017 d07fb2a7fa23f10839ea64b47e4dde84 0.2195486
-#> 3 LMO_2011-2023_16S:P10353_1017 a47939feccc5b2427f5aaed5e10f9d4e 0.5127092
-#> 4 LMO_2011-2023_16S:P10353_1017 e795c18a7a9d8a44c319d3141bad3bbe 0.5695189
-#> 5 LMO_2011-2023_16S:P10353_1017 b5ef80188c610dbd0b5f6a3c3595c61a 0.9999997
-#> 6 LMO_2011-2023_16S:P10353_1017 63003fc2bf33e0a1679d94ddd16c690d 0.9611575
+#>                          sample                            taxon      quant
+#> 1 LMO_2011-2023_16S:P10353_1017 fb9507ef3a51274a1ba4044145884a7a 0.04836678
+#> 2 LMO_2011-2023_16S:P10353_1017 4715d00a2315b24a3fcc1b66ae839a94 0.61970678
+#> 3 LMO_2011-2023_16S:P10353_1017 1f8ad8e19d57de558a88ed9fb9be9858 0.99958590
+#> 4 LMO_2011-2023_16S:P10353_1017 28b979d0ac9a5bc2f8e6cf47854058ed 0.99994459
+#> 5 LMO_2011-2023_16S:P10353_1017 380d81417892576cb8aa4c50e92e5e1d 0.99999999
+#> 6 LMO_2011-2023_16S:P10353_1017 4efca1c1efaae85b53628aad8ca4ca98 0.88716076
 ```

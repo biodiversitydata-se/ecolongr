@@ -20,6 +20,26 @@ community, including all-zero samples and explicit zero rows.
   variance of every cell over many replicates with `vegan`’s and with
   the exact values. The table is read into R, so this function needs a
   few times the memory of its input.
+- **[`el_rrarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_rrarefy.md),
+  [`el_drarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  and
+  [`el_rarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  drop samples with a total below `depth`, with a warning that names
+  them.**
+  [`vegan::rrarefy()`](https://vegandevs.github.io/vegan/reference/rarefy.html)
+  returns such a sample unchanged, which leaves samples of different
+  depths in the result.
+  [`vegan::drarefy()`](https://vegandevs.github.io/vegan/reference/rarefy.html)
+  and
+  [`vegan::rarefy()`](https://vegandevs.github.io/vegan/reference/rarefy.html)
+  treat `depth` as the sample total, so the values are not for a common
+  depth. If no sample reaches `depth` it is an error. Without a `depth`,
+  all three use the smallest sample total, which `vegan` has no default
+  for. With `check = FALSE`,
+  [`el_drarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  and
+  [`el_rarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
+  drop silently.
 - **[`el_rarefy()`](https://biodiversitydata-se.github.io/ecolongr/reference/el_drarefy.md)
   has no `se`, and takes one `depth`.** The standard error needs a sum
   over pairs of taxa. Call the function once for each depth.
