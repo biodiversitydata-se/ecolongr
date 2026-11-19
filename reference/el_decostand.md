@@ -96,7 +96,7 @@ counts <- duckplyr::read_csv_duckdb(
   options = list(delim = "\t", header = TRUE), prudence = "stingy"
 )
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpHcnWZb/duckdb
+#> ℹ /tmp/RtmpJUWEXL/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
@@ -128,7 +128,7 @@ d <- counts |>
   el_decostand("hellinger") |>
   el_vegdist("euclidean", samples = metadata$sample)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpHcnWZb/duckdb
+#> ℹ /tmp/RtmpJUWEXL/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.

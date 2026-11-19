@@ -42,7 +42,7 @@ of taxa."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Frequencies of frequencies</h1>
-      <small class="dont-index">Source: <a href="https://github.com/biodiversitydata-se/ecolongr/blob/main/R/frequency_counts.R" class="external-link"><code>R/frequency_counts.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/biodiversitydata-se/ecolongr/blob/0.2.2/R/frequency_counts.R" class="external-link"><code>R/frequency_counts.R</code></a></small>
       <div class="d-none name"><code>el_frequency_counts.Rd</code></div>
     </div>
 
@@ -107,12 +107,12 @@ rows is absent. The row order is not defined.</p>
 <span class="r-in"><span><span class="va">frequencies</span> <span class="op">&lt;-</span> <span class="va">counts</span> <span class="op">|&gt;</span> <span class="fu">el_frequency_counts</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">frequencies</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                          sample count n_taxa</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 LMO_2011-2023_16S:P10353_1017  2314      1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 LMO_2011-2023_16S:P10353_1018     5     12</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 LMO_2011-2023_16S:P10353_1018    17      6</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 LMO_2011-2023_16S:P10353_1018    79      2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 LMO_2011-2023_16S:P10353_1018   288      1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 LMO_2011-2023_16S:P10353_1018   177      1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 LMO_2011-2023_16S:P10353_1017   321      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 LMO_2011-2023_16S:P10353_1017    29      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 LMO_2011-2023_16S:P10353_1017   607      2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 LMO_2011-2023_16S:P10353_1018  1243      1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 LMO_2011-2023_16S:P10353_1018 20704      1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 LMO_2011-2023_16S:P10353_1019    25      9</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="co"># The input of richness estimators that count the unseen taxa, one sample at a time.</span></span></span>

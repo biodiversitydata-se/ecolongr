@@ -75,7 +75,7 @@ counts <- read_csv_duckdb(
   options = list(delim = "\t", header = TRUE), prudence = "stingy"
 )
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpTVQAvw/duckdb
+#> ℹ /tmp/RtmpQP1xxf/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
@@ -165,7 +165,7 @@ d_hellinger <- counts |>
   el_decostand("hellinger") |>
   el_vegdist("euclidean", samples = metadata$sample)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpTVQAvw/duckdb
+#> ℹ /tmp/RtmpQP1xxf/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
@@ -214,7 +214,7 @@ d_bray <- counts |>
   el_decostand("total") |>
   el_vegdist("bray", samples = metadata$sample)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpTVQAvw/duckdb
+#> ℹ /tmp/RtmpQP1xxf/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
@@ -245,7 +245,7 @@ pca_hellinger <- counts |>
   el_decostand("hellinger") |>
   el_rda(k = 5, samples = metadata$sample)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpTVQAvw/duckdb
+#> ℹ /tmp/RtmpQP1xxf/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
@@ -318,7 +318,7 @@ counts_common <- counts |> semi_join(common, by = "taxon")
 d_aitchison <- counts_common |>
   el_vegdist("aitchison", pseudocount = pseudocount, samples = metadata$sample)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpTVQAvw/duckdb
+#> ℹ /tmp/RtmpQP1xxf/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
@@ -329,7 +329,7 @@ d_aitchison <- counts_common |>
 pca_clr <- counts_common |>
   el_rda(k = 5, transform = "clr", pseudocount = pseudocount, samples = metadata$sample)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpTVQAvw/duckdb
+#> ℹ /tmp/RtmpQP1xxf/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
@@ -361,7 +361,7 @@ For comparison, the same PCA with all the ASVs of the bundled table
 pca_clr_all <- counts |>
   el_rda(k = 5, transform = "clr", pseudocount = pseudocount, samples = metadata$sample)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpTVQAvw/duckdb
+#> ℹ /tmp/RtmpQP1xxf/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.
@@ -545,11 +545,11 @@ frequencies <- counts |> el_frequency_counts() |> as.data.frame()
 frequencies |> filter(sample == metadata$sample[1]) |> head()
 #>                         sample count n_taxa
 #> 1 LMO_2011-2023_16S:P2256_1001   172      1
-#> 2 LMO_2011-2023_16S:P2256_1001    35      1
-#> 3 LMO_2011-2023_16S:P2256_1001   379      1
-#> 4 LMO_2011-2023_16S:P2256_1001    32      1
-#> 5 LMO_2011-2023_16S:P2256_1001    55      3
-#> 6 LMO_2011-2023_16S:P2256_1001  1425      1
+#> 2 LMO_2011-2023_16S:P2256_1001   235      1
+#> 3 LMO_2011-2023_16S:P2256_1001    62      1
+#> 4 LMO_2011-2023_16S:P2256_1001   168      1
+#> 5 LMO_2011-2023_16S:P2256_1001    22      5
+#> 6 LMO_2011-2023_16S:P2256_1001   132      2
 ```
 
 The `breakaway` package fits such models to one sample at a time; the

@@ -88,12 +88,12 @@ subsample <- el_rrarefy(counts, depth = 5000)
 # Every sample now has exactly 5,000 reads, but different samples keep different ASVs.
 subsample |> summarise(reads = sum(quant), .by = sample) |> head() |> as.data.frame()
 #>                          sample reads
-#> 1 LMO_2011-2023_16S:P10353_1017  5000
-#> 2 LMO_2011-2023_16S:P10353_1020  5000
-#> 3 LMO_2011-2023_16S:P10353_1024  5000
-#> 4 LMO_2011-2023_16S:P13006_1025  5000
-#> 5 LMO_2011-2023_16S:P13006_1033  5000
-#> 6 LMO_2011-2023_16S:P13006_1036  5000
+#> 1 LMO_2011-2023_16S:P10353_1023  5000
+#> 2 LMO_2011-2023_16S:P10353_1026  5000
+#> 3  LMO_2011-2023_16S:P1202_1051  5000
+#> 4 LMO_2011-2023_16S:P13006_1026  5000
+#> 5 LMO_2011-2023_16S:P13006_1029  5000
+#> 6 LMO_2011-2023_16S:P13006_1031  5000
 el_specnumber(subsample) |> head()
 #> LMO_2011-2023_16S:P10353_1017 LMO_2011-2023_16S:P10353_1018 
 #>                           251                           236 

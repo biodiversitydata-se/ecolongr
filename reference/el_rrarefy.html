@@ -38,7 +38,7 @@ sample total is used, so no sample is dropped."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Rarefy samples to a common depth</h1>
-      <small class="dont-index">Source: <a href="https://github.com/biodiversitydata-se/ecolongr/blob/main/R/rrarefy.R" class="external-link"><code>R/rrarefy.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/biodiversitydata-se/ecolongr/blob/0.2.2/R/rrarefy.R" class="external-link"><code>R/rrarefy.R</code></a></small>
       <div class="d-none name"><code>el_rrarefy.Rd</code></div>
     </div>
 
@@ -126,12 +126,12 @@ step: allow a few times the memory of the input. Counts or totals of about
 <span class="r-in"><span><span class="co"># Every sample now has exactly 5,000 reads, but different samples keep different ASVs.</span></span></span>
 <span class="r-in"><span><span class="va">subsample</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>reads <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">quant</span><span class="op">)</span>, .by <span class="op">=</span> <span class="va">sample</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                          sample reads</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 LMO_2011-2023_16S:P10353_1017  5000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 LMO_2011-2023_16S:P10353_1020  5000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 LMO_2011-2023_16S:P10353_1024  5000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 LMO_2011-2023_16S:P13006_1025  5000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 LMO_2011-2023_16S:P13006_1033  5000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 LMO_2011-2023_16S:P13006_1036  5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 LMO_2011-2023_16S:P10353_1023  5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 LMO_2011-2023_16S:P10353_1026  5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  LMO_2011-2023_16S:P1202_1051  5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 LMO_2011-2023_16S:P13006_1026  5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 LMO_2011-2023_16S:P13006_1029  5000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 LMO_2011-2023_16S:P13006_1031  5000</span>
 <span class="r-in"><span><span class="fu"><a href="el_diversity.html">el_specnumber</a></span><span class="op">(</span><span class="va">subsample</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> LMO_2011-2023_16S:P10353_1017 LMO_2011-2023_16S:P10353_1018 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                           251                           236 </span>
