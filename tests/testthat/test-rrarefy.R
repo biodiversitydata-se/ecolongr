@@ -55,19 +55,50 @@ test_that("rarefied counts have the hypergeometric mean and variance, as in vega
   expect_true(all(abs(ours$var / theirs$var - 1)[present] < 0.2))
 })
 
-test_that("samples with a total at or below the depth are returned unchanged", {
-  m <- rarefy_fixture()
-  m["c", ] <- c(1, 1, 2, 3, 5, 0) # total 12
+test_that("a sample whose total equals the depth is kept as it is, without a warning", {
+  m <- rarefy_fixture() # totals 20, 30, 12
 
   expect_warning(got <- as.data.frame(el_rrarefy(long_table(m), depth = 12)), NA)
   expect_equal(got[got$sample == "c", c("taxon", "quant")][order(got$taxon[got$sample == "c"]), ],
                long_table(m)[long_table(m)$sample == "c", c("taxon", "quant")],
                ignore_attr = TRUE)
-  expect_equal(sum(got$quant[got$sample == "a"]), 12)
+  expect_equal(c(tapply(got$quant, got$sample, sum)), c(a = 12, b = 12, c = 12))
+})
 
-  expect_warning(got <- as.data.frame(el_rrarefy(long_table(m), depth = 15)), "not rarefied")
-  expect_equal(sum(got$quant[got$sample == "c"]), 12)
-  expect_equal(sum(got$quant[got$sample == "a"]), 15)
+test_that("samples with a total below the depth are dropped, with a warning that names them", {
+  m <- rarefy_fixture() # totals 20, 30, 12
+  m <- rbind(m, d = c(1, 1, 0, 0, 0, 0))
+
+  expect_warning(got <- as.data.frame(el_rrarefy(long_table(m), depth = 15)), "dropped.*c, d")
+  expect_equal(sort(unique(got$sample)), c("a", "b"))
+  expect_equal(c(tapply(got$quant, got$sample, sum)), c(a = 15, b = 15))
+})
+
+test_that("the warning counts the dropped samples and shortens a long list of names", {
+  m <- matrix(1, nrow = 12, ncol = 2, dimnames = list(sprintf("s%02d", 1:12), c("x", "y")))
+  m <- rbind(m, big = c(50, 50))
+
+  expect_warning(el_rrarefy(long_table(m), depth = 10), "12 samples.*s01.*\\.\\.\\.")
+})
+
+test_that("it is an error when no sample reaches the depth", {
+  expect_error(el_rrarefy(long_table(rarefy_fixture()), depth = 31), "depth")
+})
+
+test_that("without a depth, samples are rarefied to the smallest total, with no warning", {
+  m <- rarefy_fixture() # totals 20, 30, 12
+  set.seed(4)
+
+  expect_warning(got <- as.data.frame(el_rrarefy(long_table(m))), NA)
+  expect_equal(c(tapply(got$quant, got$sample, sum)), c(a = 12, b = 12, c = 12))
+})
+
+test_that("the smallest total ignores zero counts and samples that have only zeros", {
+  x <- data.frame(sample = c("a", "a", "b", "b", "z"), taxon = c("x", "y", "x", "y", "x"),
+                  quant = c(5, 0, 8, 9, 0))
+
+  expect_warning(got <- as.data.frame(el_rrarefy(x)), NA)
+  expect_equal(c(tapply(got$quant, got$sample, sum)), c(a = 5, b = 5))
 })
 
 test_that("the same seed gives the same result and another seed another", {
@@ -137,10 +168,10 @@ test_that("a sample is one group even when other ids collate as equal and rows a
   nfc <- "á"
   nfd <- "á"
   x <- data.frame(sample = c(nfc, nfd, nfc), taxon = c("x", "x", "y"), quant = c(5, 5, 5))
-  expect_warning(got <- as.data.frame(el_rrarefy(x, depth = 6)), "not rarefied")
+  expect_warning(got <- as.data.frame(el_rrarefy(x, depth = 6)), "dropped")
 
   expect_equal(sum(got$quant[got$sample == nfc]), 6)
-  expect_equal(sum(got$quant[got$sample == nfd]), 5)
+  expect_false(nfd %in% got$sample)
 })
 
 test_that("rows with a zero count are ignored, and a sample with only zeros is dropped without a warning", {

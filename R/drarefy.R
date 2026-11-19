@@ -22,6 +22,7 @@ utils::globalVariables(c("total", "k", "p"))
 #' `vegan` does. Only these pairs, not the table, are read into R.
 #'
 #' @inheritParams el_rrarefy
+#' @param depth A single finite whole number, at least 1.
 #' @param check If `TRUE`, run queries that stop on negative, missing, non-finite
 #'   or non-whole counts and warn about samples below `depth`. Use `FALSE` to stay
 #'   entirely lazy.
@@ -65,9 +66,7 @@ presence_probability <- function(total, quant, depth) {
 }
 
 rarefy_input <- function(x, depth, check, sample, taxon, quant) {
-  if (!is.numeric(depth) || length(depth) != 1 || !is.finite(depth) || depth < 1 || depth != round(depth)) {
-    stop("`depth` must be a single finite whole number, at least 1", call. = FALSE)
-  }
+  check_depth(depth)
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   x <- dplyr::select(x, sample = dplyr::all_of(sample), taxon = dplyr::all_of(taxon),
                      quant = dplyr::all_of(quant))
@@ -79,6 +78,12 @@ rarefy_input <- function(x, depth, check, sample, taxon, quant) {
     if (isTRUE(smallest < depth)) warning("some samples have a total below `depth` and are not rarefied", call. = FALSE)
   }
   x
+}
+
+check_depth <- function(depth) {
+  if (!is.numeric(depth) || length(depth) != 1 || !is.finite(depth) || depth < 1 || depth != round(depth)) {
+    stop("`depth` must be a single finite whole number, at least 1", call. = FALSE)
+  }
 }
 
 check_counts <- function(x, quant) {

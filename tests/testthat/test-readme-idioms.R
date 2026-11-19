@@ -103,7 +103,7 @@ test_that("the alpha diversity idioms in the README line up by sample name and m
   expect_true(all(expected_richness <= richness[names(expected_richness)] + 1e-9))
 
   set.seed(1)
-  subsample <- as.data.frame(el_rrarefy(counts, depth))
+  subsample <- as.data.frame(el_rrarefy(counts))
   expect_true(all(tapply(subsample$quant, subsample$sample, sum) == depth))
 })
 

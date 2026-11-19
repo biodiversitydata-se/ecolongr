@@ -236,8 +236,11 @@ Result objects keep the `vegan` classes (`dist`, and `rda` where feasible), so t
 
 ### `rrarefy`
 
-Implemented as `el_rrarefy(x, depth, sample, taxon, quant)`: a random subsample, without replacement, of `depth` individuals from each sample.
-Samples with a total at or below `depth` are returned unchanged, with a warning when below, as in `vegan`.
+Implemented as `el_rrarefy(x, depth = NULL, sample, taxon, quant)`: a random subsample, without replacement, of `depth` individuals from each sample.
+`NULL` means the smallest total among samples with a non-zero count.
+Samples with a total below `depth` are dropped, with a warning that names them (an error if none is left), and a sample at `depth` is kept as it is.
+`vegan` returns the small samples unchanged, which leaves unequal depths in the result and silently breaks what follows; a dropped sample is easy to find again with an anti-join.
+`el_drarefy()` and `el_rarefy()` still follow `vegan` and treat such a sample as having `depth` equal to its total.
 
 - It materializes the input: the table is read into R and each sample is drawn in C++ (`src/rarefy.cpp`).
   The R side copies the table several times, so it needs a few times the memory of the input (a 412 MB table peaked at 1.3 GB).

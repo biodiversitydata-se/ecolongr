@@ -18,6 +18,10 @@ The tests use `varespec`, `BCI` and a synthetic community, including all-zero sa
   `el_rrarefy()` draws the count of each taxon from the hypergeometric distribution of what is left, which costs one draw per taxon.
   Both draw from the same distribution of counts, and the tests compare the mean and the variance of every cell over many replicates with `vegan`'s and with the exact values.
   The table is read into R, so this function needs a few times the memory of its input.
+- **`el_rrarefy()` drops samples with a total below `depth`, with a warning.**
+  `vegan::rrarefy()` returns them unchanged, which leaves samples of different depths in the result.
+  If no sample reaches `depth` it is an error.
+  Without a `depth`, `el_rrarefy()` uses the smallest sample total, which `vegan` has no default for.
 - **`el_rarefy()` has no `se`, and takes one `depth`.**
   The standard error needs a sum over pairs of taxa.
   Call the function once for each depth.

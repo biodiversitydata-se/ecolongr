@@ -4,13 +4,20 @@
 \alias{el_rrarefy}
 \title{Rarefy samples to a common depth}
 \usage{
-el_rrarefy(x, depth, sample = "sample", taxon = "taxon", quant = "quant")
+el_rrarefy(
+  x,
+  depth = NULL,
+  sample = "sample",
+  taxon = "taxon",
+  quant = "quant"
+)
 }
 \arguments{
 \item{x}{A data frame or lazy \code{duckplyr} table with one row per non-zero
 sample and taxon, holding whole counts. Rows with \code{quant == 0} are dropped.}
 
-\item{depth}{A single finite whole number, at least 1.}
+\item{depth}{A single finite whole number, at least 1. The default, \code{NULL},
+is the smallest total among the samples with a non-zero count.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}. The result has only
 these three columns, with the same names.}
@@ -21,10 +28,15 @@ the order they first appear in \code{x} and without the taxa that were not drawn
 }
 \description{
 Counterpart of \code{\link[vegan:rrarefy]{vegan::rrarefy()}}: a random subsample, without replacement,
-of \code{depth} individuals from each sample. Samples with a total at or below
-\code{depth} are returned unchanged, with a warning if the total is below.
+of \code{depth} individuals from each sample. With no \code{depth}, the smallest
+sample total is used, so no sample is dropped.
 }
 \details{
+A sample with a total below \code{depth} cannot be rarefied and is dropped from the
+result, with a warning that names it; it is an error if no sample is left.
+\code{vegan} returns such a sample unchanged, which leaves samples of different
+depths in the result. A sample whose total equals \code{depth} is kept as it is.
+
 The result is random, so call \code{\link[=set.seed]{set.seed()}} first for a reproducible one.
 It is not the same random sample as \code{vegan}'s for the same seed: \code{vegan}
 draws the individuals one at a time, and \code{el_rrarefy()} draws the count of
