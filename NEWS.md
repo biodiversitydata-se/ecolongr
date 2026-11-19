@@ -1,3 +1,5 @@
+# ecolongr (development version)
+
 # ecolongr 0.2.1
 
 * `el_rrarefy()`, `el_drarefy()` and `el_rarefy()` have a default `depth`, the smallest sample total, so `el_rrarefy(x)` gives every sample the same depth without dropping any.
