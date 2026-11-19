@@ -50,6 +50,7 @@ el_rrarefy <- function(x, depth = NULL, sample = "sample", taxon = "taxon", quan
   d <- d[d$quant > 0, ]
   samples <- unique(d$sample)
   total <- c(rowsum(d$quant, match(d$sample, samples)))
+  if (length(total) == 0 && is.null(depth)) stop("`", quant, "` has no non-zero counts", call. = FALSE)
   if (is.null(depth)) depth <- min(total)
   if (all(total < depth)) stop("no sample has a total of at least `depth` (", format(depth), ")", call. = FALSE)
   if (any(total < depth)) {

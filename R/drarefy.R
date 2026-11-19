@@ -66,7 +66,7 @@ el_rarefy <- function(x, depth = NULL, check = TRUE, sample = "sample", taxon = 
   x <- prepared$x
   depth <- prepared$depth
   d <- as.data.frame(dplyr::summarise(x, k = dplyr::n(), .by = c(sample, total, quant)))
-  c(tapply(d$k * presence_probability(d$total, d$quant, depth), d$sample, sum))
+  c(tapply(d$k * presence_probability(d$total, d$quant, depth), as.character(d$sample), sum))
 }
 
 presence_probability <- function(total, quant, depth) {
@@ -81,15 +81,15 @@ rarefy_input <- function(x, depth, check, sample, taxon, quant) {
   if (check) check_counts(x, quant)
   x <- dplyr::filter(x, quant > 0)
   x <- dplyr::mutate(x, total = sum(quant, na.rm = TRUE), .by = sample)
-  if (is.null(depth)) {
-    depth <- as.data.frame(dplyr::summarise(x, smallest = min(total, na.rm = TRUE)))$smallest
-    if (!is.finite(depth)) stop("`", quant, "` has no non-zero counts", call. = FALSE)
-  }
-  if (check) {
-    small <- as.data.frame(dplyr::distinct(dplyr::filter(x, total < depth), sample))$sample
-    kept <- as.data.frame(dplyr::summarise(dplyr::filter(x, total >= depth), n = dplyr::n()))$n
-    if (kept == 0) stop("no sample has a total of at least `depth` (", format(depth), ")", call. = FALSE)
-    if (length(small) > 0) warn_dropped(sort(as.character(small)))
+  if (check || is.null(depth)) {
+    per_sample <- as.data.frame(dplyr::summarise(x, total = sum(quant, na.rm = TRUE), .by = sample))
+    if (nrow(per_sample) == 0) stop("`", quant, "` has no non-zero counts", call. = FALSE)
+    if (is.null(depth)) depth <- min(per_sample$total)
+    if (check) {
+      small <- as.character(per_sample$sample[per_sample$total < depth])
+      if (length(small) == nrow(per_sample)) stop("no sample has a total of at least `depth` (", format(depth), ")", call. = FALSE)
+      if (length(small) > 0) warn_dropped(small[order(small, na.last = TRUE)])
+    }
   }
   list(x = dplyr::filter(x, total >= depth), depth = depth)
 }

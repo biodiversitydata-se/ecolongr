@@ -189,3 +189,38 @@ test_that("NaN and Inf counts are errors", {
     }
   }
 })
+
+test_that("a dropped sample with a missing id is counted and named in the warning", {
+  x <- data.frame(sample = c(NA, "b", "c"), taxon = "x", quant = c(2, 9, 1))
+
+  expect_warning(got <- as.data.frame(el_drarefy(x, depth = 5)), "2 samples.*(NA, c|c, NA)")
+  expect_equal(got$sample, "b")
+  expect_warning(richness <- el_rarefy(x, depth = 5), "2 samples.*(NA, c|c, NA)")
+  expect_equal(names(richness), "b")
+})
+
+test_that("el_rarefy names only the kept samples when the sample column is a factor", {
+  x <- data.frame(sample = factor(c("a", "a", "b", "b", "c")), taxon = c("x", "y", "x", "y", "x"),
+                  quant = c(3, 3, 2, 3, 1))
+
+  expect_warning(richness <- el_rarefy(x, depth = 5), "dropped")
+  expect_equal(names(richness), c("a", "b"))
+  expect_false(anyNA(richness))
+})
+
+test_that("an empty table or one with only zero counts, with no depth, is an error that says so", {
+  x <- data.frame(sample = c("a", "b"), taxon = "x", quant = c(0, 0))
+
+  for (f in list(el_rrarefy, el_drarefy, el_rarefy)) {
+    expect_error(suppressWarnings(f(x)), "no non-zero counts")
+  }
+  expect_error(suppressWarnings(el_rrarefy(x[0, ])), "no non-zero counts")
+})
+
+test_that("check = FALSE keeps el_rarefy dropping small samples, with a default depth too", {
+  x <- long_table(rarefy_fixture())
+
+  expect_warning(richness <- el_rarefy(x, depth = 15, check = FALSE), NA)
+  expect_equal(names(richness), c("a", "b"))
+  expect_equal(el_rarefy(x, check = FALSE), el_rarefy(x, depth = 12))
+})

@@ -204,3 +204,10 @@ test_that("el_rrarefy converts its input with prudence 'stingy'", {
   expect_true(length(seen) > 0)
   expect_true(all(seen == "stingy"))
 })
+
+test_that("a dropped sample with a missing id is named in the warning", {
+  x <- data.frame(sample = c(NA, "b", "c"), taxon = "x", quant = c(2, 9, 1))
+
+  expect_warning(got <- as.data.frame(el_rrarefy(x, depth = 5)), "2 samples.*(NA, c|c, NA)")
+  expect_equal(got$sample, "b")
+})
