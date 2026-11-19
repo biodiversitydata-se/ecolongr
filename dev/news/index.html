@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ecolongr</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,9 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="ecolongr-development-version">ecolongr (development version)<a class="anchor" aria-label="anchor" href="#ecolongr-development-version"></a></h2>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.1" id="ecolongr-021">ecolongr 0.2.1<a class="anchor" aria-label="anchor" href="#ecolongr-021"></a></h2>
 <ul><li>
 <code><a href="../reference/el_rrarefy.html">el_rrarefy()</a></code>, <code><a href="../reference/el_drarefy.html">el_drarefy()</a></code> and <code><a href="../reference/el_drarefy.html">el_rarefy()</a></code> have a default <code>depth</code>, the smallest sample total, so <code>el_rrarefy(x)</code> gives every sample the same depth without dropping any. Samples with a total below <code>depth</code> are now dropped, with a warning that names them, and it is an error if none is left. Before, <code><a href="../reference/el_rrarefy.html">el_rrarefy()</a></code> returned them unchanged and <code><a href="../reference/el_drarefy.html">el_drarefy()</a></code> and <code><a href="../reference/el_drarefy.html">el_rarefy()</a></code> used their total as the depth, as <code>vegan</code> does, which gave values that were not at a common depth. With <code>check = FALSE</code> the latter two drop silently.</li>
 </ul></div>

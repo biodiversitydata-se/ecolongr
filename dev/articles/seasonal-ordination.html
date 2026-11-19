@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ecolongr</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -130,7 +130,7 @@ sample). The rest of the vignette uses it.</p>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>delim <span class="op">=</span> <span class="st">"\t"</span>, header <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, prudence <span class="op">=</span> <span class="st">"stingy"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpIdgD7B/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpPXNgOx/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -207,7 +207,7 @@ query:</p>
 <span>  <span class="fu"><a href="../reference/el_decostand.html">el_decostand</a></span><span class="op">(</span><span class="st">"hellinger"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_vegdist.html">el_vegdist</a></span><span class="op">(</span><span class="st">"euclidean"</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpIdgD7B/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpPXNgOx/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -251,7 +251,7 @@ that matrix is what this package avoids building.</p>
 <span>  <span class="fu"><a href="../reference/el_decostand.html">el_decostand</a></span><span class="op">(</span><span class="st">"total"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_vegdist.html">el_vegdist</a></span><span class="op">(</span><span class="st">"bray"</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpIdgD7B/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpPXNgOx/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -278,7 +278,7 @@ the dense table.</p>
 <span>  <span class="fu"><a href="../reference/el_decostand.html">el_decostand</a></span><span class="op">(</span><span class="st">"hellinger"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_rda.html">el_rda</a></span><span class="op">(</span>k <span class="op">=</span> <span class="fl">5</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpIdgD7B/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpPXNgOx/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -339,7 +339,7 @@ removed. We keep the ASVs present in at least 20% of the samples:</p>
 <code class="sourceCode R"><span><span class="va">d_aitchison</span> <span class="op">&lt;-</span> <span class="va">counts_common</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_vegdist.html">el_vegdist</a></span><span class="op">(</span><span class="st">"aitchison"</span>, pseudocount <span class="op">=</span> <span class="va">pseudocount</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpIdgD7B/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpPXNgOx/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -350,7 +350,7 @@ removed. We keep the ASVs present in at least 20% of the samples:</p>
 <span><span class="va">pca_clr</span> <span class="op">&lt;-</span> <span class="va">counts_common</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_rda.html">el_rda</a></span><span class="op">(</span>k <span class="op">=</span> <span class="fl">5</span>, transform <span class="op">=</span> <span class="st">"clr"</span>, pseudocount <span class="op">=</span> <span class="va">pseudocount</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpIdgD7B/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpPXNgOx/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -374,7 +374,7 @@ ring.</p>
 <code class="sourceCode R"><span><span class="va">pca_clr_all</span> <span class="op">&lt;-</span> <span class="va">counts</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_rda.html">el_rda</a></span><span class="op">(</span>k <span class="op">=</span> <span class="fl">5</span>, transform <span class="op">=</span> <span class="st">"clr"</span>, pseudocount <span class="op">=</span> <span class="va">pseudocount</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpIdgD7B/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpPXNgOx/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>

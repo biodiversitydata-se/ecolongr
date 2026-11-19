@@ -2,6 +2,8 @@
 
 ## ecolongr (development version)
 
+## ecolongr 0.2.1
+
 - [`el_rrarefy()`](https://biodiversitydata-se.github.io/ecolongr/dev/reference/el_rrarefy.md),
   [`el_drarefy()`](https://biodiversitydata-se.github.io/ecolongr/dev/reference/el_drarefy.md)
   and
