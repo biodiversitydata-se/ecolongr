@@ -1,5 +1,9 @@
 # ecolongr (development version)
 
+* `el_rrarefy()` gives the same table for the same `set.seed()` however the rows of its input are ordered.
+  It used the order it got, and DuckDB does not guarantee one, so a lazy table could give different draws on each run (#2).
+  The result is now sorted by sample and taxon; before, the samples came in the order they first appeared.
+
 # ecolongr 0.2.1
 
 * `el_rrarefy()`, `el_drarefy()` and `el_rarefy()` have a default `depth`, the smallest sample total, so `el_rrarefy(x)` gives every sample the same depth without dropping any.

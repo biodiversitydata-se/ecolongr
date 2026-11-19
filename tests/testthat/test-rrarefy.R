@@ -181,11 +181,39 @@ test_that("rows with a zero count are ignored, and a sample with only zeros is d
   expect_equal(got, data.frame(sample = "a", taxon = "x", quant = 3))
 })
 
-test_that("samples come out in the order they first appear", {
-  x <- data.frame(sample = c("b", "a", "b"), taxon = c("x", "x", "y"), quant = c(5, 5, 5))
+test_that("the result is sorted by sample and then taxon, whatever the order of the input", {
+  x <- data.frame(sample = c("b", "a", "b", "a"), taxon = c("y", "z", "x", "x"), quant = c(5, 5, 5, 5))
   got <- as.data.frame(el_rrarefy(x, depth = 3))
 
-  expect_equal(unique(got$sample), c("b", "a"))
+  expect_equal(got$sample, sort(got$sample))
+  expect_equal(got$taxon[got$sample == "a"], sort(got$taxon[got$sample == "a"]))
+  expect_equal(got$taxon[got$sample == "b"], sort(got$taxon[got$sample == "b"]))
+})
+
+test_that("the same seed gives the same table however the input rows are ordered", {
+  x <- long_table(synthetic_community())
+  reference <- {
+    set.seed(11)
+    as.data.frame(el_rrarefy(x))
+  }
+
+  for (shuffle in 1:4) {
+    set.seed(100 + shuffle)
+    y <- x[sample(nrow(x)), ]
+    set.seed(11)
+    expect_equal(as.data.frame(el_rrarefy(y)), reference)
+  }
+})
+
+test_that("rows that repeat a sample and taxon are drawn in a fixed order too", {
+  x <- data.frame(sample = c("a", "a", "a"), taxon = c("x", "x", "y"), quant = c(7, 2, 5))
+  y <- x[c(2, 3, 1), ]
+  set.seed(3)
+  one <- as.data.frame(el_rrarefy(x, depth = 6))
+  set.seed(3)
+  two <- as.data.frame(el_rrarefy(y, depth = 6))
+
+  expect_equal(one, two)
 })
 
 test_that("el_rrarefy converts its input with prudence 'stingy'", {

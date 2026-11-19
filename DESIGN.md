@@ -238,6 +238,7 @@ Result objects keep the `vegan` classes (`dist`, and `rda` where feasible), so t
 
 Implemented as `el_rrarefy(x, depth = NULL, sample, taxon, quant)`: a random subsample, without replacement, of `depth` individuals from each sample.
 `NULL` means the smallest total among samples with a non-zero count.
+The rows are sorted by sample, taxon and count before drawing, because the draws consume random numbers in row order and DuckDB gives no order; the result comes out in that order.
 Samples with a total below `depth` are dropped, with a warning that names them (an error if none is left), and a sample at `depth` is kept as it is.
 `vegan` returns the small samples unchanged, which leaves unequal depths in the result and silently breaks what follows; a dropped sample is easy to find again with an anti-join.
 

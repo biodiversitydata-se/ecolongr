@@ -10,6 +10,9 @@
 #' depths in the result. A sample whose total equals `depth` is kept as it is.
 #'
 #' The result is random, so call [set.seed()] first for a reproducible one.
+#' The rows are sorted by sample, taxon and count before anything is drawn, so
+#' the same seed gives the same table however the rows of `x` are ordered, which
+#' for a lazy table is not under your control.
 #' It is not the same random sample as `vegan`'s for the same seed: `vegan`
 #' draws the individuals one at a time, and `el_rrarefy()` draws the count of
 #' each taxon from the hypergeometric distribution of what is left. Both draw
@@ -25,8 +28,8 @@
 #'   is the smallest total among the samples with a non-zero count.
 #' @param sample,taxon,quant Names of the columns in `x`. The result has only
 #'   these three columns, with the same names.
-#' @return A `duckplyr` table holding the result in memory, with the samples in
-#'   the order they first appear in `x` and without the taxa that were not drawn.
+#' @return A `duckplyr` table holding the result in memory, sorted by sample and
+#'   taxon and without the taxa that were not drawn.
 #' @example man-roxygen/lmo-counts.R
 #' @examples
 #' set.seed(1)
@@ -48,6 +51,7 @@ el_rrarefy <- function(x, depth = NULL, sample = "sample", taxon = "taxon", quan
     stop("`", quant, "` must hold finite whole counts (integers)", call. = FALSE)
   }
   d <- d[d$quant > 0, ]
+  d <- d[order(d$sample, d$taxon, d$quant, method = "radix"), ]
   samples <- unique(d$sample)
   total <- c(rowsum(d$quant, match(d$sample, samples)))
   if (length(total) == 0 && is.null(depth)) stop("`", quant, "` has no non-zero counts", call. = FALSE)
@@ -58,9 +62,6 @@ el_rrarefy <- function(x, depth = NULL, sample = "sample", taxon = "taxon", quan
     d <- d[d$sample %in% samples[total >= depth], ]
   }
   id <- match(d$sample, unique(d$sample))
-  o <- order(id)
-  d <- d[o, ]
-  id <- id[o]
   d$quant <- rarefy_runs(d$quant, c(0L, which(diff(id) != 0L), nrow(d)), depth)
   d <- d[d$quant > 0, ]
   rownames(d) <- NULL

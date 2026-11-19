@@ -23,8 +23,8 @@ is the smallest total among the samples with a non-zero count.}
 these three columns, with the same names.}
 }
 \value{
-A \code{duckplyr} table holding the result in memory, with the samples in
-the order they first appear in \code{x} and without the taxa that were not drawn.
+A \code{duckplyr} table holding the result in memory, sorted by sample and
+taxon and without the taxa that were not drawn.
 }
 \description{
 Counterpart of \code{\link[vegan:rrarefy]{vegan::rrarefy()}}: a random subsample, without replacement,
@@ -38,6 +38,9 @@ result, with a warning that names it; it is an error if no sample is left.
 depths in the result. A sample whose total equals \code{depth} is kept as it is.
 
 The result is random, so call \code{\link[=set.seed]{set.seed()}} first for a reproducible one.
+The rows are sorted by sample, taxon and count before anything is drawn, so
+the same seed gives the same table however the rows of \code{x} are ordered, which
+for a lazy table is not under your control.
 It is not the same random sample as \code{vegan}'s for the same seed: \code{vegan}
 draws the individuals one at a time, and \code{el_rrarefy()} draws the count of
 each taxon from the hypergeometric distribution of what is left. Both draw
