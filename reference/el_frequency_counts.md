@@ -58,12 +58,12 @@ metadata <- filter(metadata, sample %in% as.data.frame(deep)$sample)
 frequencies <- counts |> el_frequency_counts() |> as.data.frame()
 head(frequencies)
 #>                          sample count n_taxa
-#> 1 LMO_2011-2023_16S:P10353_1017    34      5
-#> 2 LMO_2011-2023_16S:P10353_1017    49      3
-#> 3 LMO_2011-2023_16S:P10353_1017   442      1
-#> 4 LMO_2011-2023_16S:P10353_1019    21      3
-#> 5 LMO_2011-2023_16S:P10353_1019 10653      1
-#> 6 LMO_2011-2023_16S:P10353_1021    68      2
+#> 1 LMO_2011-2023_16S:P10353_1017   321      2
+#> 2 LMO_2011-2023_16S:P10353_1017    29      2
+#> 3 LMO_2011-2023_16S:P10353_1017   607      2
+#> 4 LMO_2011-2023_16S:P10353_1018  1243      1
+#> 5 LMO_2011-2023_16S:P10353_1018 20704      1
+#> 6 LMO_2011-2023_16S:P10353_1019    25      9
 
 if (FALSE) { # \dontrun{
 # The input of richness estimators that count the unseen taxa, one sample at a time.
