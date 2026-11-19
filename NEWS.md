@@ -1,3 +1,5 @@
+# ecolongr (development version)
+
 # ecolongr 0.2.2
 
 * `el_rrarefy()` gives the same table for the same `set.seed()` however the rows of its input are ordered.
