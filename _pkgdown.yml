@@ -3,6 +3,9 @@ url: https://biodiversitydata-se.github.io/ecolongr/
 template:
   bootstrap: 5
 
+development:
+  mode: auto
+
 reference:
   - title: Alpha diversity
     desc: Richness, diversity indices and rarefaction of each sample.
