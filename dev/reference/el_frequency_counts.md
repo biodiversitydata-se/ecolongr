@@ -1,0 +1,95 @@
+# Frequencies of frequencies
+
+For each sample, how many taxa were seen exactly once, twice, and so on.
+This is the input of richness estimators that count the unseen taxa,
+such as the `breakaway` package. It is one grouped count over the table,
+so it stays lazy, and its size depends on the number of distinct counts,
+not the number of taxa.
+
+## Usage
+
+``` r
+el_frequency_counts(x, check = TRUE, sample = "sample", quant = "quant")
+```
+
+## Arguments
+
+- x:
+
+  A data frame or lazy `duckplyr` table with one row per non-zero sample
+  and taxon, holding whole counts. Rows with `quant == 0` are dropped.
+
+- check:
+
+  If `TRUE`, run queries that stop on negative, missing or non-whole
+  counts. Use `FALSE` to stay entirely lazy.
+
+- sample, quant:
+
+  Names of the columns in `x` that hold the sample and the count.
+
+## Value
+
+A lazy `duckplyr` table with one row for each sample and count present
+in it: the sample column named as in `sample`, `count`, and `n_taxa`,
+the number of taxa with that count. A sample with no non-zero rows is
+absent. The row order is not defined.
+
+## Examples
+
+``` r
+library(dplyr)
+
+# A long table of read counts for 16S ASVs in a time series from the Baltic Sea.
+counts <- duckplyr::read_csv_duckdb(
+  system.file("extdata", "lmo_free_living.tsv.gz", package = "ecolongr"),
+  options = list(delim = "\t", header = TRUE), prudence = "stingy"
+)
+metadata <- read.delim(system.file("extdata", "lmo_free_living_samples.tsv", package = "ecolongr"))
+
+# Samples with at least 5,000 reads.
+deep <- counts |>
+  summarise(reads = sum(quant, na.rm = TRUE), .by = sample) |>
+  filter(reads >= 5000) |>
+  select(sample)
+counts <- semi_join(counts, deep, by = "sample")
+metadata <- filter(metadata, sample %in% as.data.frame(deep)$sample)
+# How many ASVs each sample has seen once, twice and so on.
+frequencies <- counts |> el_frequency_counts() |> as.data.frame()
+head(frequencies)
+#>                          sample count n_taxa
+#> 1 LMO_2011-2023_16S:P10353_1017    10      4
+#> 2 LMO_2011-2023_16S:P10353_1017   131      1
+#> 3 LMO_2011-2023_16S:P10353_1018    14      5
+#> 4 LMO_2011-2023_16S:P10353_1018    30      3
+#> 5 LMO_2011-2023_16S:P10353_1018    65      1
+#> 6 LMO_2011-2023_16S:P10353_1019   331      1
+
+if (FALSE) { # \dontrun{
+# The input of richness estimators that count the unseen taxa, one sample at a time.
+# `breakaway` is on GitHub (adw96/breakaway). It reads one table per sample, sorted by
+# count, with the count in the first column and the number of taxa in the second.
+per_sample <- frequencies |>
+  arrange(sample, count) |>
+  split(~ sample) |>
+  purrr::map(\(d) select(d, count, n_taxa))
+
+estimates <- per_sample |>
+  purrr::map(\(d) breakaway::breakaway(d))
+
+# The samples are independent, so the fits can run in parallel with purrr, which needs
+# the mirai and carrier packages.
+mirai::daemons(4)
+estimates <- per_sample |>
+  purrr::map(purrr::in_parallel(\(d) breakaway::breakaway(d)))
+mirai::daemons(0)
+
+tibble(
+  sample = names(estimates),
+  estimate = purrr::map_dbl(estimates, \(e) e$estimate),
+  se = purrr::map_dbl(estimates, \(e) e$error)
+)
+# breakaway's estimates depend strongly on `cutoff`, the largest count used in the fit.
+# Tables without singletons, such as DADA2 output, need breakaway::breakaway_nof1().
+} # }
+```
