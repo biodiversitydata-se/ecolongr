@@ -115,7 +115,7 @@ x <- data.frame(
 x <- x[x$quant > 0, ]
 pca <- el_rda(x, k = 3)
 #> duckdb keeps downloaded extensions and secrets in a temporary directory:
-#> ℹ /tmp/RtmpL4zdeU/duckdb
+#> ℹ /tmp/RtmpK0UrKL/duckdb
 #> This is removed when the R session ends.
 #> • Extensions are re-downloaded each session.
 #> • Secrets are lost.

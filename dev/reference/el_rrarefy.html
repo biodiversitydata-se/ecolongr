@@ -11,7 +11,7 @@ sample total is used, so no sample is dropped."><meta name="robots" content="noi
 
     <a class="navbar-brand me-2" href="../index.html">ecolongr</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.1.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.2.2.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,8 +80,8 @@ these three columns, with the same names.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>duckplyr</code> table holding the result in memory, with the samples in
-the order they first appear in <code>x</code> and without the taxa that were not drawn.</p>
+    <p>A <code>duckplyr</code> table holding the result in memory, sorted by sample and
+taxon and without the taxa that were not drawn.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -90,6 +90,9 @@ result, with a warning that names it; it is an error if no sample is left.
 <code>vegan</code> returns such a sample unchanged, which leaves samples of different
 depths in the result. A sample whose total equals <code>depth</code> is kept as it is.</p>
 <p>The result is random, so call <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> first for a reproducible one.
+The rows are sorted by sample, taxon and count before anything is drawn, so
+the same seed gives the same table however the rows of <code>x</code> are ordered, which
+for a lazy table is not under your control.
 It is not the same random sample as <code>vegan</code>'s for the same seed: <code>vegan</code>
 draws the individuals one at a time, and <code>el_rrarefy()</code> draws the count of
 each taxon from the hypergeometric distribution of what is left. Both draw

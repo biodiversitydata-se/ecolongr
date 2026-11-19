@@ -2,6 +2,17 @@
 
 ## ecolongr (development version)
 
+## ecolongr 0.2.2
+
+- [`el_rrarefy()`](https://biodiversitydata-se.github.io/ecolongr/dev/reference/el_rrarefy.md)
+  gives the same table for the same
+  [`set.seed()`](https://rdrr.io/r/base/Random.html) however the rows of
+  its input are ordered. It used the order it got, and DuckDB does not
+  guarantee one, so a lazy table could give different draws on each run
+  ([\#2](https://github.com/biodiversitydata-se/ecolongr/issues/2)). The
+  result is now sorted by sample and taxon; before, the samples came in
+  the order they first appeared.
+
 ## ecolongr 0.2.1
 
 - [`el_rrarefy()`](https://biodiversitydata-se.github.io/ecolongr/dev/reference/el_rrarefy.md),
