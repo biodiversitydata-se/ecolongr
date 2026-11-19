@@ -35,7 +35,7 @@ The Bioconductor package [`mia`](https://bioconductor.org/packages/mia) calls `v
 
 ## Status
 
-Early development, version 0.2.0.
+Early development, version 0.2.1.
 The functions are tested against `vegan`, but names and arguments may still change.
 Design, scope and open questions are in [`DESIGN.md`](https://github.com/biodiversitydata-se/ecolongr/blob/main/DESIGN.md).
 
