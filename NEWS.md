@@ -1,8 +1,9 @@
 # ecolongr (development version)
 
-* `el_rrarefy()` has a default `depth`, the smallest sample total, so `el_rrarefy(x)` gives every sample the same depth without dropping any.
+* `el_rrarefy()`, `el_drarefy()` and `el_rarefy()` have a default `depth`, the smallest sample total, so `el_rrarefy(x)` gives every sample the same depth without dropping any.
   Samples with a total below `depth` are now dropped, with a warning that names them, and it is an error if none is left.
-  Before, they were returned unchanged, as in `vegan`, which left samples of different depths in the result.
+  Before, `el_rrarefy()` returned them unchanged and `el_drarefy()` and `el_rarefy()` used their total as the depth, as `vegan` does, which gave values that were not at a common depth.
+  With `check = FALSE` the latter two drop silently.
 
 # ecolongr 0.2.0
 

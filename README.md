@@ -136,7 +136,7 @@ diversity <- tibble(sample = names(shannon), shannon = shannon, richness = richn
 Richness grows with the number of reads, so compare samples at a common depth.
 `el_rarefy()` gives the richness each sample is expected to have in a subsample of `depth` reads, which is exact and needs no random numbers.
 `el_rrarefy()` draws one random subsample, as `vegan::rrarefy()` does, and returns a table; use it when you need the subsampled table itself.
-Without a `depth` it uses the smallest sample total, and a sample below `depth` is dropped with a warning.
+All three take no `depth` to mean the smallest sample total, and drop a sample below `depth` with a warning.
 
 ```r
 depth <- counts |>
@@ -255,7 +255,7 @@ The tests compare every function and option with `vegan` on `varespec`, `BCI` an
 The differences that matter:
 
 - `el_rrarefy()` is random and does not give `vegan`'s subsample for the same seed; it draws from the same distribution.
-  It drops samples with a total below `depth`, where `vegan` returns them unchanged.
+- `el_rrarefy()`, `el_drarefy()` and `el_rarefy()` drop samples with a total below `depth`, where `vegan` returns them unchanged (`rrarefy()`) or treats `depth` as their total (`drarefy()`, `rarefy()`).
 - `el_decostand("rclr")` leaves zeros absent, which `vegan`'s completed `rclr` does not; `el_vegdist(method = "robust.aitchison")` and `el_rda(transform = "rclr")` run the same completion as `vegan`.
 - `metaMDS()` on the `dist` has no species scores.
 - `el_rda()` returns the first `k` axes only, so `predict()` and `fitted()` give an error.

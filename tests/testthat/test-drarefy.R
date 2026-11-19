@@ -34,16 +34,52 @@ for (fixture in names(rarefy_fixtures)) {
   }
 }
 
-test_that("a depth above a sample total gives probability 1 and the observed richness, as vegan", {
-  m <- rarefy_fixtures$BCI[1:4, ]
-  depth <- max(rowSums(m)) + 10
+test_that("samples with a total below the depth are dropped, with a warning that names them", {
+  m <- rarefy_fixture() # totals 20, 30, 12
+  kept <- m[c("a", "b"), ]
 
-  expect_warning(got <- as.data.frame(el_drarefy(long_table(m), depth = depth)), "not rarefied")
-  expect_equal(got$quant, rep(1, nrow(got)))
-  expect_equal(wide_from_long(got, m), vegan_drarefy(m, depth), tolerance = 1e-10)
-  expect_warning(richness <- el_rarefy(long_table(m), depth = depth), "not rarefied")
-  expect_equal(richness[rownames(m)], rowSums(m > 0), ignore_attr = TRUE)
-  expect_equal(richness[rownames(m)], vegan_rarefy(m, depth), tolerance = 1e-10)
+  expect_warning(got <- as.data.frame(el_drarefy(long_table(m), depth = 15)), "dropped.*c")
+  expect_equal(sort(unique(got$sample)), c("a", "b"))
+  expect_equal(wide_from_long(got, kept), vegan_drarefy(kept, 15), tolerance = 1e-10)
+
+  expect_warning(richness <- el_rarefy(long_table(m), depth = 15), "dropped.*c")
+  expect_equal(names(richness), c("a", "b"))
+  expect_equal(richness[rownames(kept)], vegan_rarefy(kept, 15), tolerance = 1e-10)
+})
+
+test_that("a sample whose total equals the depth is kept, with probability 1 for every taxon", {
+  m <- rarefy_fixture()
+
+  expect_warning(got <- as.data.frame(el_drarefy(long_table(m), depth = 12)), NA)
+  expect_equal(got$quant[got$sample == "c"], rep(1, sum(m["c", ] > 0)))
+})
+
+test_that("it is an error when no sample reaches the depth", {
+  expect_error(el_drarefy(long_table(rarefy_fixture()), depth = 31), "depth")
+  expect_error(el_rarefy(long_table(rarefy_fixture()), depth = 31), "depth")
+})
+
+test_that("without a depth, the smallest total is used, with no warning", {
+  m <- rarefy_fixture() # totals 20, 30, 12
+
+  expect_warning(got <- as.data.frame(el_drarefy(long_table(m))), NA)
+  expect_equal(wide_from_long(got, m), vegan_drarefy(m, 12), tolerance = 1e-10)
+  expect_warning(richness <- el_rarefy(long_table(m)), NA)
+  expect_equal(richness[rownames(m)], vegan_rarefy(m, 12), tolerance = 1e-10)
+})
+
+test_that("the smallest total ignores zero counts and samples that have only zeros", {
+  x <- data.frame(sample = c("a", "a", "b", "b", "z"), taxon = c("x", "y", "x", "y", "x"),
+                  quant = c(5, 0, 8, 9, 0))
+
+  expect_equal(el_rarefy(x), el_rarefy(x, depth = 5))
+})
+
+test_that("check = FALSE drops small samples without a warning and without reading the table", {
+  x <- duckplyr::as_duckdb_tibble(long_table(rarefy_fixture()), prudence = "stingy")
+
+  expect_warning(got <- el_drarefy(x, depth = 15, check = FALSE), NA)
+  expect_equal(sort(unique(as.data.frame(got)$sample)), c("a", "b"))
 })
 
 test_that("a depth equal to every total gives no warning", {

@@ -7,7 +7,7 @@
 \usage{
 el_drarefy(
   x,
-  depth,
+  depth = NULL,
   check = TRUE,
   sample = "sample",
   taxon = "taxon",
@@ -16,7 +16,7 @@ el_drarefy(
 
 el_rarefy(
   x,
-  depth,
+  depth = NULL,
   check = TRUE,
   sample = "sample",
   taxon = "taxon",
@@ -27,11 +27,13 @@ el_rarefy(
 \item{x}{A data frame or lazy \code{duckplyr} table with one row per non-zero
 sample and taxon, holding whole counts. Rows with \code{quant == 0} are dropped.}
 
-\item{depth}{A single finite whole number, at least 1.}
+\item{depth}{A single finite whole number, at least 1. The default, \code{NULL},
+is the smallest total among the samples with a non-zero count, which takes
+one small query.}
 
 \item{check}{If \code{TRUE}, run queries that stop on negative, missing, non-finite
-or non-whole counts and warn about samples below \code{depth}. Use \code{FALSE} to stay
-entirely lazy.}
+or non-whole counts, warn about samples below \code{depth} and stop if none is left.
+Use \code{FALSE} to stay lazy: small samples are still dropped, silently.}
 
 \item{sample, taxon, quant}{Names of the columns in \code{x}. The result has only
 these three columns, with the same names.}
@@ -57,8 +59,11 @@ expected richness at \code{depth}. Unlike \code{vegan}, it has no \code{se} opti
 takes a single \code{depth}.
 }
 
-A sample with a total below \code{depth} is treated as if \code{depth} were its total,
-so every taxon in it has probability 1, with a warning as in \code{vegan}.
+With no \code{depth}, the smallest sample total is used, so no sample is dropped.
+A sample with a total below \code{depth} is dropped from the result, with a
+warning that names it, and it is an error if no sample is left.
+\code{vegan} instead treats such a sample as if \code{depth} were its total.
+A sample whose total equals \code{depth} is kept.
 
 The probability depends only on the sample total and the count, so it is
 computed once for each distinct pair of the two, in R with \code{\link[=lchoose]{lchoose()}} as

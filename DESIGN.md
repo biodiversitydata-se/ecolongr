@@ -240,7 +240,6 @@ Implemented as `el_rrarefy(x, depth = NULL, sample, taxon, quant)`: a random sub
 `NULL` means the smallest total among samples with a non-zero count.
 Samples with a total below `depth` are dropped, with a warning that names them (an error if none is left), and a sample at `depth` is kept as it is.
 `vegan` returns the small samples unchanged, which leaves unequal depths in the result and silently breaks what follows; a dropped sample is easy to find again with an anti-join.
-`el_drarefy()` and `el_rarefy()` still follow `vegan` and treat such a sample as having `depth` equal to its total.
 
 - It materializes the input: the table is read into R and each sample is drawn in C++ (`src/rarefy.cpp`).
   The R side copies the table several times, so it needs a few times the memory of the input (a 412 MB table peaked at 1.3 GB).
@@ -268,6 +267,9 @@ Those estimators are not implemented; see "Open questions".
 Implemented as `el_drarefy(x, depth)` and `el_rarefy(x, depth)`: the expected presence of each taxon, and the expected richness of each sample, in a subsample of `depth` individuals.
 Deterministic, so the tests compare them with `vegan::drarefy` and `vegan::rarefy` at 1e-10 on `BCI`, the synthetic community and one sample of 2 million individuals.
 They are also compared with the mean over 4,000 `el_rrarefy()` replicates.
+
+Like `el_rrarefy()`, they default `depth` to the smallest total and drop samples below `depth`; `vegan` treats such a sample as having `depth` equal to its total, which is not a value at a common depth.
+With `check = FALSE` the samples are still dropped, but silently and without the error; a `NULL` depth costs one small query for the minimum.
 
 - The probability that a taxon is present depends only on the sample total and the count.
   A lazy query finds the distinct pairs, R computes the probability for each with `lchoose()` as `vegan` does, and a join puts it back.

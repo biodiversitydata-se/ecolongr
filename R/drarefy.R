@@ -14,18 +14,23 @@ utils::globalVariables(c("total", "k", "p"))
 #'   expected richness at `depth`. Unlike `vegan`, it has no `se` option and
 #'   takes a single `depth`.
 #'
-#' A sample with a total below `depth` is treated as if `depth` were its total,
-#' so every taxon in it has probability 1, with a warning as in `vegan`.
+#' With no `depth`, the smallest sample total is used, so no sample is dropped.
+#' A sample with a total below `depth` is dropped from the result, with a
+#' warning that names it, and it is an error if no sample is left.
+#' `vegan` instead treats such a sample as if `depth` were its total.
+#' A sample whose total equals `depth` is kept.
 #'
 #' The probability depends only on the sample total and the count, so it is
 #' computed once for each distinct pair of the two, in R with [lchoose()] as
 #' `vegan` does. Only these pairs, not the table, are read into R.
 #'
 #' @inheritParams el_rrarefy
-#' @param depth A single finite whole number, at least 1.
+#' @param depth A single finite whole number, at least 1. The default, `NULL`,
+#'   is the smallest total among the samples with a non-zero count, which takes
+#'   one small query.
 #' @param check If `TRUE`, run queries that stop on negative, missing, non-finite
-#'   or non-whole counts and warn about samples below `depth`. Use `FALSE` to stay
-#'   entirely lazy.
+#'   or non-whole counts, warn about samples below `depth` and stop if none is left.
+#'   Use `FALSE` to stay lazy: small samples are still dropped, silently.
 #' @return `el_drarefy()`: a lazy `duckplyr` table with the columns `sample`,
 #'   `taxon` and `quant`, named as in the arguments. `el_rarefy()`: a numeric
 #'   vector with one expected richness per sample, named by sample.
@@ -42,8 +47,10 @@ utils::globalVariables(c("total", "k", "p"))
 #'   head() |>
 #'   as.data.frame()
 #' @export
-el_drarefy <- function(x, depth, check = TRUE, sample = "sample", taxon = "taxon", quant = "quant") {
-  x <- rarefy_input(x, depth, check, sample, taxon, quant)
+el_drarefy <- function(x, depth = NULL, check = TRUE, sample = "sample", taxon = "taxon", quant = "quant") {
+  prepared <- rarefy_input(x, depth, check, sample, taxon, quant)
+  x <- prepared$x
+  depth <- prepared$depth
   pairs <- as.data.frame(dplyr::distinct(x, total, quant))
   pairs$p <- presence_probability(pairs$total, pairs$quant, depth)
   pairs <- duckplyr::as_duckdb_tibble(pairs, prudence = "stingy")
@@ -54,30 +61,37 @@ el_drarefy <- function(x, depth, check = TRUE, sample = "sample", taxon = "taxon
 
 #' @rdname el_drarefy
 #' @export
-el_rarefy <- function(x, depth, check = TRUE, sample = "sample", taxon = "taxon", quant = "quant") {
-  x <- rarefy_input(x, depth, check, sample, taxon, quant)
+el_rarefy <- function(x, depth = NULL, check = TRUE, sample = "sample", taxon = "taxon", quant = "quant") {
+  prepared <- rarefy_input(x, depth, check, sample, taxon, quant)
+  x <- prepared$x
+  depth <- prepared$depth
   d <- as.data.frame(dplyr::summarise(x, k = dplyr::n(), .by = c(sample, total, quant)))
   c(tapply(d$k * presence_probability(d$total, d$quant, depth), d$sample, sum))
 }
 
 presence_probability <- function(total, quant, depth) {
-  n <- pmin(depth, total)
-  1 - ifelse(total - quant < n, 0, exp(lchoose(total - quant, n) - lchoose(total, n)))
+  1 - ifelse(total - quant < depth, 0, exp(lchoose(total - quant, depth) - lchoose(total, depth)))
 }
 
 rarefy_input <- function(x, depth, check, sample, taxon, quant) {
-  check_depth(depth)
+  if (!is.null(depth)) check_depth(depth)
   x <- duckplyr::as_duckdb_tibble(x, prudence = "stingy")
   x <- dplyr::select(x, sample = dplyr::all_of(sample), taxon = dplyr::all_of(taxon),
                      quant = dplyr::all_of(quant))
   if (check) check_counts(x, quant)
   x <- dplyr::filter(x, quant > 0)
   x <- dplyr::mutate(x, total = sum(quant, na.rm = TRUE), .by = sample)
-  if (check) {
-    smallest <- as.data.frame(dplyr::summarise(x, smallest = min(total, na.rm = TRUE)))$smallest
-    if (isTRUE(smallest < depth)) warning("some samples have a total below `depth` and are not rarefied", call. = FALSE)
+  if (is.null(depth)) {
+    depth <- as.data.frame(dplyr::summarise(x, smallest = min(total, na.rm = TRUE)))$smallest
+    if (!is.finite(depth)) stop("`", quant, "` has no non-zero counts", call. = FALSE)
   }
-  x
+  if (check) {
+    small <- as.data.frame(dplyr::distinct(dplyr::filter(x, total < depth), sample))$sample
+    kept <- as.data.frame(dplyr::summarise(dplyr::filter(x, total >= depth), n = dplyr::n()))$n
+    if (kept == 0) stop("no sample has a total of at least `depth` (", format(depth), ")", call. = FALSE)
+    if (length(small) > 0) warn_dropped(sort(as.character(small)))
+  }
+  list(x = dplyr::filter(x, total >= depth), depth = depth)
 }
 
 check_depth <- function(depth) {
