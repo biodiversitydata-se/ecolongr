@@ -19,7 +19,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ecolongr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -59,7 +59,7 @@
       <h1>A seasonal time series of ASVs, from the published table to an ordination</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/biodiversitydata-se/ecolongr/blob/0.2.1/vignettes/seasonal-ordination.Rmd" class="external-link"><code>vignettes/seasonal-ordination.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/biodiversitydata-se/ecolongr/blob/main/vignettes/seasonal-ordination.Rmd" class="external-link"><code>vignettes/seasonal-ordination.Rmd</code></a></small>
       <div class="d-none name"><code>seasonal-ordination.Rmd</code></div>
     </div>
 
@@ -129,7 +129,7 @@ sample). The rest of the vignette uses it.</p>
 <span>  options <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>delim <span class="op">=</span> <span class="st">"\t"</span>, header <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, prudence <span class="op">=</span> <span class="st">"stingy"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/Rtmp788Rjl/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpTVQAvw/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -206,7 +206,7 @@ query:</p>
 <span>  <span class="fu"><a href="../reference/el_decostand.html">el_decostand</a></span><span class="op">(</span><span class="st">"hellinger"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_vegdist.html">el_vegdist</a></span><span class="op">(</span><span class="st">"euclidean"</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/Rtmp788Rjl/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpTVQAvw/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -250,7 +250,7 @@ that matrix is what this package avoids building.</p>
 <span>  <span class="fu"><a href="../reference/el_decostand.html">el_decostand</a></span><span class="op">(</span><span class="st">"total"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_vegdist.html">el_vegdist</a></span><span class="op">(</span><span class="st">"bray"</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/Rtmp788Rjl/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpTVQAvw/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -277,7 +277,7 @@ the dense table.</p>
 <span>  <span class="fu"><a href="../reference/el_decostand.html">el_decostand</a></span><span class="op">(</span><span class="st">"hellinger"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_rda.html">el_rda</a></span><span class="op">(</span>k <span class="op">=</span> <span class="fl">5</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/Rtmp788Rjl/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpTVQAvw/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -338,7 +338,7 @@ removed. We keep the ASVs present in at least 20% of the samples:</p>
 <code class="sourceCode R"><span><span class="va">d_aitchison</span> <span class="op">&lt;-</span> <span class="va">counts_common</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_vegdist.html">el_vegdist</a></span><span class="op">(</span><span class="st">"aitchison"</span>, pseudocount <span class="op">=</span> <span class="va">pseudocount</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/Rtmp788Rjl/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpTVQAvw/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -349,7 +349,7 @@ removed. We keep the ASVs present in at least 20% of the samples:</p>
 <span><span class="va">pca_clr</span> <span class="op">&lt;-</span> <span class="va">counts_common</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_rda.html">el_rda</a></span><span class="op">(</span>k <span class="op">=</span> <span class="fl">5</span>, transform <span class="op">=</span> <span class="st">"clr"</span>, pseudocount <span class="op">=</span> <span class="va">pseudocount</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/Rtmp788Rjl/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpTVQAvw/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -373,7 +373,7 @@ ring.</p>
 <code class="sourceCode R"><span><span class="va">pca_clr_all</span> <span class="op">&lt;-</span> <span class="va">counts</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/el_rda.html">el_rda</a></span><span class="op">(</span>k <span class="op">=</span> <span class="fl">5</span>, transform <span class="op">=</span> <span class="st">"clr"</span>, pseudocount <span class="op">=</span> <span class="va">pseudocount</span>, samples <span class="op">=</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span></span>
 <span><span class="co">#&gt; duckdb keeps downloaded extensions and secrets in a temporary directory:</span></span>
-<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/Rtmp788Rjl/duckdb</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">ℹ</span> /tmp/RtmpTVQAvw/duckdb</span></span>
 <span><span class="co">#&gt; This is removed when the R session ends.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Extensions are re-downloaded each session.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Secrets are lost.</span></span>
@@ -519,12 +519,12 @@ computes that for every sample in one lazy step:</p>
 <code class="sourceCode R"><span><span class="va">frequencies</span> <span class="op">&lt;-</span> <span class="va">counts</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/el_frequency_counts.html">el_frequency_counts</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">frequencies</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">sample</span> <span class="op">==</span> <span class="va">metadata</span><span class="op">$</span><span class="va">sample</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                         sample count n_taxa</span></span>
-<span><span class="co">#&gt; 1 LMO_2011-2023_16S:P2256_1001    65      1</span></span>
-<span><span class="co">#&gt; 2 LMO_2011-2023_16S:P2256_1001    14      5</span></span>
-<span><span class="co">#&gt; 3 LMO_2011-2023_16S:P2256_1001    30      5</span></span>
-<span><span class="co">#&gt; 4 LMO_2011-2023_16S:P2256_1001   371      1</span></span>
-<span><span class="co">#&gt; 5 LMO_2011-2023_16S:P2256_1001   143      1</span></span>
-<span><span class="co">#&gt; 6 LMO_2011-2023_16S:P2256_1001    75      1</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 LMO_2011-2023_16S:P2256_1001   172      1</span></span>
+<span><span class="co">#&gt; 2 LMO_2011-2023_16S:P2256_1001    35      1</span></span>
+<span><span class="co">#&gt; 3 LMO_2011-2023_16S:P2256_1001   379      1</span></span>
+<span><span class="co">#&gt; 4 LMO_2011-2023_16S:P2256_1001    32      1</span></span>
+<span><span class="co">#&gt; 5 LMO_2011-2023_16S:P2256_1001    55      3</span></span>
+<span><span class="co">#&gt; 6 LMO_2011-2023_16S:P2256_1001  1425      1</span></span></code></pre></div>
 <p>The <code>breakaway</code> package fits such models to one sample at
 a time; the help page of <code><a href="../reference/el_frequency_counts.html">el_frequency_counts()</a></code> shows how to
 run it on this table in parallel with <code>purrr</code>.</p>

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ecolongr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,9 +34,14 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/biodiversitydata-se/ecolongr/blob/0.2.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/biodiversitydata-se/ecolongr/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.2" id="ecolongr-022">ecolongr 0.2.2<a class="anchor" aria-label="anchor" href="#ecolongr-022"></a></h2>
+<ul><li>
+<code><a href="../reference/el_rrarefy.html">el_rrarefy()</a></code> gives the same table for the same <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> however the rows of its input are ordered. It used the order it got, and DuckDB does not guarantee one, so a lazy table could give different draws on each run (<a href="https://github.com/biodiversitydata-se/ecolongr/issues/2" class="external-link">#2</a>). The result is now sorted by sample and taxon; before, the samples came in the order they first appeared.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="ecolongr-021">ecolongr 0.2.1<a class="anchor" aria-label="anchor" href="#ecolongr-021"></a></h2>
 <ul><li>

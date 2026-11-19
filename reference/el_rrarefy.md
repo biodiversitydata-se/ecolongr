@@ -37,8 +37,8 @@ el_rrarefy(
 
 ## Value
 
-A `duckplyr` table holding the result in memory, with the samples in the
-order they first appear in `x` and without the taxa that were not drawn.
+A `duckplyr` table holding the result in memory, sorted by sample and
+taxon and without the taxa that were not drawn.
 
 ## Details
 
@@ -50,11 +50,14 @@ samples of different depths in the result. A sample whose total equals
 
 The result is random, so call
 [`set.seed()`](https://rdrr.io/r/base/Random.html) first for a
-reproducible one. It is not the same random sample as `vegan`'s for the
-same seed: `vegan` draws the individuals one at a time, and
-`el_rrarefy()` draws the count of each taxon from the hypergeometric
-distribution of what is left. Both draw from the same distribution of
-counts (the multivariate hypergeometric).
+reproducible one. The rows are sorted by sample, taxon and count before
+anything is drawn, so the same seed gives the same table however the
+rows of `x` are ordered, which for a lazy table is not under your
+control. It is not the same random sample as `vegan`'s for the same
+seed: `vegan` draws the individuals one at a time, and `el_rrarefy()`
+draws the count of each taxon from the hypergeometric distribution of
+what is left. Both draw from the same distribution of counts (the
+multivariate hypergeometric).
 
 The table is read into R and copied several times, so this is not a lazy
 step: allow a few times the memory of the input. Counts or totals of

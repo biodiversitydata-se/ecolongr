@@ -7,16 +7,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/biodiversitydata-se/ecolongr/blob/0.2.1/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/biodiversitydata-se/ecolongr/blob/main/DESCRIPTION)
 
 Lundin D (2026). *ecolongr: Community Ecology Analyses on Long Tables*.
-R package version 0.2.1,
+R package version 0.2.2,
 <https://biodiversitydata-se.github.io/ecolongr/>.
 
     @Manual{,
       title = {ecolongr: Community Ecology Analyses on Long Tables},
       author = {Daniel Lundin},
       year = {2026},
-      note = {R package version 0.2.1},
+      note = {R package version 0.2.2},
       url = {https://biodiversitydata-se.github.io/ecolongr/},
     }
